@@ -30,6 +30,7 @@ tens     = ["twenty","thirty","fourty","fifty","sixty","seventy","eighty","ninet
 oneTo9   = ["","one","two","three","four","five","six","seven","eight","nine"]
 teens    = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"]
 hundreds = ["one hundred","two hundred","three hundred","four hundred","five hundred","six hundred","seven hundred","eight hundred","nine hundred"]
+ranks    = ["","thousand","million","billion","trillion","quadrillion"]
 
 sayNumber :: (Integral a) => a -> [Char]
 sayNumber n
@@ -40,7 +41,7 @@ sayNumber n
           where triples x   = (x `mod` 1000, x `div` 1000) `maybeIf` (x>0)
                 oneTo999    = oneTo99 ++          (pairsWith joinStripTwo hundreds oneTo99)
                 oneTo99     = oneTo9  ++ teens ++ (pairsWith joinStripTwo tens     oneTo9)
-                ranks       = ["","thousand","million","billion"] ++ (tail ranks) `zipSpace` (repeat "billion")
+                allRanks    = ranks ++ (tail allRanks) `zipSpace` (repeat · last $ ranks)
 
 ------------------------------------------------------------- 
 
