@@ -1,5 +1,4 @@
 import Data.Tuple
-import Data.List.Split (splitOn)
 import Data.List (transpose, intercalate, isPrefixOf, inits, sort, unfoldr, nub)
 import Data.Function
 

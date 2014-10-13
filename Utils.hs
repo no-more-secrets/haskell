@@ -1,16 +1,15 @@
 module Utils where
 
-import Data.List.Split (splitOn)
-import Data.List (intercalate, groupBy, genericIndex)
+import Data.List (intercalate, groupBy, genericIndex, isPrefixOf, unfoldr, findIndex, tails)
 import Data.Function (on)
 
 -------------------------------------------------------------
+--Utility Functions
+-------------------------------------------------------------
+
 --Reading and Writing
 
 readInteger = read :: (String -> Integer)
-
--------------------------------------------------------------
---Utility Functions
 
 --In insert mode type CTRL-V 183 to get this
 (·) = (.)
@@ -46,8 +45,17 @@ strip = reverse · dropWhile (== ' ') · reverse · dropWhile (== ' ')
 pairs xs ys       = [ (x,y) | x<-xs, y<-ys ]
 pairsWith f xs ys = [ f x y | x<-xs, y<-ys ]
 
--------------------------------------------------------------
---Splitting and Joining
+-- Basic split function
+
+split :: (Eq a) => [a] -> [a] -> [[a]]
+split cs xs
+    | (res == Nothing) = [xs]
+    | otherwise        = [take idx xs] ++ split cs (drop (idx + length cs) xs)
+    where
+        res      = findIndex (cs `isPrefixOf`) (tails xs)
+        Just idx = res
+
+-- Splitting and Joining
 
 joinBegin :: [a] -> [[a]] -> [a]
 joinBegin x = (x ++) · intercalate x
@@ -59,9 +67,6 @@ zipSpace = zipWith (\x y -> x++" "++y)
 
 splitIgnore :: Eq a => [a] -> [a] -> [[a]]
 splitIgnore x = remove null · split x
-
-split :: Eq a => [a] -> [a] -> [[a]]
-split = splitOn
 
 splitComma :: [Char] -> [[Char]]
 splitComma = split ","
