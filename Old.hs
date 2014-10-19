@@ -1,27 +1,10 @@
+module Old where
+
 import Data.Tuple
-import Data.List (transpose, intercalate, isPrefixOf, inits, sort, unfoldr, nub)
+import Data.List (transpose, intercalate, isPrefixOf, sort, unfoldr, nub)
 import Data.Function
 
 import Utils
-
-showRangesf :: (Integer -> String) -> [Integer] -> String
-showRangesf f = unwords · map showListEnds · map (map snd) · groupByKey (\(x,y) -> x-y) · enumerate · sort
-
-    where showListEnds (x:[]) = f x
-          showListEnds (x:xs) = f x ++ "-" ++ f (last xs)
-
--------------------------------------------------------------
-
-showRangesStandard = showRangesf show
-showRangesVerbose  = showRangesf $ \x -> "`" ++ sayNumber x ++ "'"
-
--------------------------------------------------------------
-
-expandRanges :: String -> [Integer]
-expandRanges = nub · sort · concat · map (uncurry enumFromTo) · map listEnds · map (map readInteger) · map (split "-") · splitIgnore " "
-
-    where listEnds (x:[]) = (x,x)
-          listEnds (x:xs) = (x,last xs)
 
 -------------------------------------------------------------
 

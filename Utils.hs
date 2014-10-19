@@ -17,6 +17,7 @@ readInteger = read :: (String -> Integer)
 ii :: (Integral a) => [b] -> a -> b
 ii = genericIndex
 
+enumerate :: (Num b, Enum b) => [a] -> [(b, a)]
 enumerate = zip [0..]
 
 zipWhile :: (a -> b -> Bool) -> [a] -> [b] -> [(a,b)]
@@ -95,3 +96,7 @@ joinPairStrip (x, y) = joinStripTwo x y
 joinSpace :: [[Char]] -> [Char]
 joinSpace = unwords · words · unwords
 
+-- Comparison functions
+
+compareWith :: (Ord b) => (a -> b) -> a -> a -> Ordering
+compareWith f x y = compare (f x) (f y)
