@@ -1,4 +1,4 @@
-import Data.List (nub, sortBy, sort, group)
+import Data.List (nub, sortBy, sort, group, unfoldr)
 import GHC.Exts (sortWith)
 import Utils
 
@@ -10,8 +10,16 @@ rangesUnion = rangesUnion' · sortWith fst · map order
         order (x,y) = if x < y then (x,y) else (y,x)
         rangesUnion' ((x,y):(u,v):xs)
             | (u <= y+1) = rangesUnion' ((x, max y v):xs)
-            | otherwise    = (x,y):(rangesUnion' ((u,v):xs))
+            | otherwise  = (x,y):(rangesUnion' ((u,v):xs))
         rangesUnion' l = l
+
+        -- Version 2
+        rangesUnion'' = unfoldr rangesGen
+            where
+                overlap ((x,y),(u,v)) = y >= u-1
+                union   ((x,y),(u,v)) = (x, max y v)
+                rangesGen x = if null x then Nothing else Just (newPair, rest)
+                    where (newPair, rest) = mapT (union · last, map snd) · span overlap $ zip (scanl (curry union) (head x) x) x
 
 -------------------------------------------------------------
 
