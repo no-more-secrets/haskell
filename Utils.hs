@@ -48,7 +48,7 @@ strip = reverse · dropWhile (== ' ') · reverse · dropWhile (== ' ')
 pairs xs ys       = [ (x,y) | x<-xs, y<-ys ]
 pairsWith f xs ys = [ f x y | x<-xs, y<-ys ]
 
-mapT :: ((a -> b), (c -> d)) -> (a, c) -> (b, d)
+mapT :: (a -> b, c -> d) -> (a, c) -> (b, d)
 mapT (f, g) (x, y) = (f x, g y)
 
 -- Basic split function

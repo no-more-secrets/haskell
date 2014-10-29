@@ -13,14 +13,6 @@ rangesUnion = rangesUnion' · sortWith fst · map order
             | otherwise  = (x,y):(rangesUnion' ((u,v):xs))
         rangesUnion' l = l
 
-        -- Version 2
-        rangesUnion'' = unfoldr rangesGen
-            where
-                overlap ((x,y),(u,v)) = y >= u-1
-                union   ((x,y),(u,v)) = (x, max y v)
-                rangesGen x = if null x then Nothing else Just (newPair, rest)
-                    where (newPair, rest) = mapT (union · last, map snd) · span overlap $ zip (scanl (curry union) (head x) x) x
-
 -------------------------------------------------------------
 
 makeRanges :: (Integral a) => [a] -> [(a,a)]
@@ -44,15 +36,13 @@ simplifyRanges = showRanges · rangesUnion · readRanges
 
 -------------------------------------------------------------
 
-
-
-
-
-
-
-
--------------------------------------------------------------
-
 --makeRanges :: (Num a, Ord a, Enum a) => [a] -> [(a,a)]
 --makeRanges = map (\x -> (head x, last x)) · map (map snd) · groupByKey (uncurry (-)) · enumerate · map head · group · sort
 
+-- Version 2
+-- rangesUnion'' = unfoldr rangesGen
+--     where
+--         overlap ((x,y),(u,v)) = y >= u-1
+--         union   ((x,y),(u,v)) = (x, max y v)
+--         rangesGen x = if null x then Nothing else Just (newPair, rest)
+--             where (newPair, rest) = mapT (union · last, map snd) · span overlap $ zip (scanl (curry union) (head x) x) x
