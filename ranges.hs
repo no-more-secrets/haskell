@@ -1,48 +1,38 @@
-import Data.List (nub, sortBy, sort, group, unfoldr)
+import Data.List (nub, sortBy, sort, group, unfoldr, partition)
+import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Utils
 
 -------------------------------------------------------------
+-- General
 
-rangesUnion :: (Integral a) => [(a,a)] -> [(a,a)]
-rangesUnion = rangesUnion' · sortWith fst · map order
-    where
-        order (x,y) = if x < y then (x,y) else (y,x)
-        rangesUnion' ((x,y):(u,v):xs)
-            | (u <= y+1) = rangesUnion' ((x, max y v):xs)
-            | otherwise  = (x,y):(rangesUnion' ((u,v):xs))
-        rangesUnion' l = l
+overlap  :: (Num a, Ord a) => (a,a) -> (a,a) -> Bool
+union    :: (Ord a)        => (a,a) -> (a,a) -> (a,a)
+sortPair :: (Ord a)        => (a,a) -> (a,a)
 
--------------------------------------------------------------
-
-makeRanges :: (Integral a) => [a] -> [(a,a)]
-makeRanges = rangesUnion · map (\x -> (x,x))
-
-expandRanges :: (Integral a) => [(a,a)] -> [a]
-expandRanges = concat · map (uncurry enumFromTo) · rangesUnion
+overlap  (x,y) (u,v) = (y >= u-1) && (x <= v+1)
+union    (x,y) (u,v) = (min x u, max y v)
+sortPair (x,y)       = if x < y then (x,y) else (y,x)
 
 -------------------------------------------------------------
+-- The meat
 
-showRanges :: [(Integer,Integer)] -> String
-showRanges = unwords · map (\(x,y) -> show x ++ (if x == y then "" else "-" ++ show y))
-
-readRanges :: String -> [(Integer, Integer)]
-readRanges = map (\x -> (head x, last x)) · map (map readInteger) · map (split "-") · splitIgnore " "
+rangesUnion :: (Num a, Ord a) => [(a,a)] -> [(a,a)]
+rangesUnion = merge · sortWith fst · fmap sortPair
+    where merge (x:y:xs) = if overlap x y then merge ((union x y):xs) else x:(merge (y:xs))
+          merge x = x
 
 -------------------------------------------------------------
+-- User operations
 
+makeRanges     :: (Num a, Ord a)         => [a]     -> [(a,a)]
+expandRanges   :: (Enum a, Num a, Ord a) => [(a,a)] -> [a]
+showRanges     :: (Show a, Eq a)         => [(a,a)] -> String
+readRanges     :: (Read a)               => String  -> [(a,a)]
 simplifyRanges :: String -> String
-simplifyRanges = showRanges · rangesUnion · readRanges
 
--------------------------------------------------------------
-
---makeRanges :: (Num a, Ord a, Enum a) => [a] -> [(a,a)]
---makeRanges = map (\x -> (head x, last x)) · map (map snd) · groupByKey (uncurry (-)) · enumerate · map head · group · sort
-
--- Version 2
--- rangesUnion'' = unfoldr rangesGen
---     where
---         overlap ((x,y),(u,v)) = y >= u-1
---         union   ((x,y),(u,v)) = (x, max y v)
---         rangesGen x = if null x then Nothing else Just (newPair, rest)
---             where (newPair, rest) = mapT (union · last, map snd) · span overlap $ zip (scanl (curry union) (head x) x) x
+makeRanges      = rangesUnion · fmap (\x -> (x,x))
+expandRanges    = concat · fmap (uncurry enumFromTo) · rangesUnion
+showRanges      = unwords · fmap (\(x,y) -> show x ++ (if x == y then "" else "-" ++ show y))
+readRanges      = fmap (\x -> (head x, last x)) · fmap (fmap read) · fmap (split "-") · splitIgnore " "
+simplifyRanges  = showRanges · rangesUnion · readRanges

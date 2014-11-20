@@ -37,6 +37,9 @@ maybeIf x b = if b then Just x else Nothing
 groupByKey :: (Eq b) => (a -> b) -> [a] -> [[a]]
 groupByKey f = groupBy ((==) `on` f)
 
+applyPair :: (a -> b) -> a -> (a,b)
+applyPair f x = (x, f x)
+
 first    = const
 keep     = filter
 remove f = keep (not · f)
