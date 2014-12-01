@@ -14,9 +14,6 @@ readInteger = read :: (String -> Integer)
 --In insert mode type CTRL-V 183 to get this
 (·) = (.)
 
-ii :: (Integral a) => [b] -> a -> b
-ii = genericIndex
-
 enumerate :: (Num b, Enum b) => [a] -> [(b, a)]
 enumerate = zip [0..]
 enumerate1 :: (Num b, Enum b) => [a] -> [(b, a)]
@@ -48,8 +45,7 @@ notnull  = not · null
 strip :: [Char] -> [Char]
 strip = reverse · dropWhile (== ' ') · reverse · dropWhile (== ' ')
  
-pairs xs ys       = [ (x,y) | x<-xs, y<-ys ]
-pairsWith f xs ys = [ f x y | x<-xs, y<-ys ]
+pairs xs ys = [ (x,y) | x<-xs, y<-ys ]
 
 mapT :: (a -> b, c -> d) -> (a, c) -> (b, d)
 mapT (f, g) (x, y) = (f x, g y)
