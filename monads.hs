@@ -1,5 +1,6 @@
-import Control.Monad
 import Data.List (unfoldr)
+import Control.Applicative ((<$>), (<*>), pure)
+import Control.Monad
 import Utils
 
 default (Int)
@@ -39,3 +40,23 @@ queens88   = queens 8 8
 
 main :: IO ()
 main = putStrLn "Hello"
+
+--calcF :: Maybe Int -> Maybe Int -> Maybe (Maybe Int)
+calcF year born = fmap (\f -> fmap f born) (fmap (-) year)
+
+--calcA :: Maybe Int -> Maybe Int -> Maybe Int
+calcA year born = pure (-) <*> year <*> born
+
+--calcM :: Maybe Int -> Maybe Int -> Maybe Int
+calcM year born = year >>= (\y -> born >>= (\b -> return (y-b)))
+--calcM year born = do
+--    y <- year
+--    b <- born
+--    return (y-b)
+
+runCalc f = [
+    f (Just 5) (Just 2),
+    f (Just 5) Nothing,
+    f Nothing (Just 2),
+    f Nothing Nothing
+    ]

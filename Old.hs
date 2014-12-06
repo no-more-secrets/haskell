@@ -2,7 +2,6 @@ module Old where
 
 import Data.Tuple (swap)
 import Data.List (genericIndex)
---import Data.Function
 
 import Utils
 
@@ -13,28 +12,23 @@ sayNumber :: (Integral a) => a -> String
 sayNumber n
     | (n == 0) = "zero"
     | (n <  0) = "negative " ++ sayNumber (-n)
-    | (n >  0) = sayPositive n
-
-        where sayPositive = join ", " · reverse · map joinPairStrip · remove (null · fst) · (`zip` ranks) · triples
-
-              --ranks :: [String]
-              ranks = ranks' ++ (tail ranks) `zipSpace` (repeat · last $ ranks')
-                  where ranks' = ["","thousand","million","billion","trillion","quadrillion"]
-
-              --triples :: (Integral a) => a -> [String]
-              triples 0 = []
-              triples n = (oneTo999 `genericIndex` (n `mod` 1000)):(triples $ n `div` 1000)
-                  where oneTo999 = oneTo99 ++          [joinStripTwo x y | x <- hundreds, y <- oneTo99]
-                        oneTo99  = oneTo9  ++ teens ++ [joinStripTwo x y | x <- tens,     y <- oneTo9]
-                        oneTo9   = ["","one","two","three","four","five","six","seven","eight","nine"]
-                        teens    = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"]
-                        tens     = ["twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"]
-                        hundreds = ["one hundred","two hundred","three hundred","four hundred","five hundred","six hundred","seven hundred","eight hundred","nine hundred"]
+    | (n >  0) = join ", " · reverse · map joinStripPair · remove (null · fst) · (`zip` ranks) · triples $ n
+      where 
+        triples = map oneTo999 · map (`mod` 1000) · takeWhile (>0) · iterate (`div` 1000)
+          where
+            oneTo999 = genericIndex [joinStripPair (x,y) | x <- hundreds, y <- oneTo99]
+            oneTo99  = oneTo9 ++ teens ++ [joinStripPair (x,y) | x <- tens,     y <- oneTo9]
+            hundreds = "" : [n++" hundred" | n <- tail oneTo9]
+            oneTo9   = ["","one","two","three","four","five","six","seven","eight","nine"]
+            teens    = ["ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"]
+            tens     = ["twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"]
+        ranks = ranks' ++ (tail ranks) `zipSpace` (repeat · last $ ranks')
+          where ranks' = ["","thousand","million","billion","trillion","quadrillion"]
 
 --------------------------------------------------------------------------------
 -- Tests for sayNumber
 
-sayNumberTest  = and sayNumberTests
+runTests = and sayNumberTests
 sayNumberTests = [sayNumber 0      == "zero",
                   sayNumber 1      == "one",
                   sayNumber 10     == "ten",
@@ -49,9 +43,12 @@ sayNumberTests = [sayNumber 0      == "zero",
                   sayNumber large1 == "two million quadrillion, three hundred twenty three thousand quadrillion, " ++
                                       "four hundred thirty four quadrillion, five hundred eleven trillion, "       ++
                                       "three hundred forty three billion, four hundred thirty four million, "      ++
-                                      "three hundred forty three thousand, four hundred thirty four"]
+                                      "three hundred forty three thousand, four hundred thirty four",
+                  sayNumber large2 == "one hundred forty nine billion quadrillion, one thousand quadrillion, " ++
+                                      "four hundred forty four quadrillion, five billion, seven hundred eighty million"]
 
-                  where large1 = 2323434511343434343434 :: Integer
+                  where large1 = 2323434511343434343434      :: Integer
+                        large2 = 149000001444000005780000000 :: Integer
 
 ------------------------------------------------------------- 
 

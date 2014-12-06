@@ -68,7 +68,8 @@ joinBegin x = (x ++) · intercalate x
 zipJoin :: [a] -> [[a]] -> [[a]] -> [[a]]
 zipJoin elem = zipWith (\x y -> join elem [x,y])
 
-zipSpace = zipWith (\x y -> x++" "++y)
+zipSpace :: [String] -> [String] -> [String]
+zipSpace = zipWith $ joinTwo " "
 
 splitIgnore :: Eq a => [a] -> [a] -> [[a]]
 splitIgnore x = remove null · split x
@@ -91,11 +92,8 @@ joinStripWith c = strip · join c · map strip
 joinStrip :: [[Char]] -> [Char]
 joinStrip = joinStripWith " "
 
-joinStripTwo :: [Char] -> [Char] -> [Char]
-joinStripTwo x y = joinStrip [x, y]
-
-joinPairStrip :: ([Char], [Char]) -> [Char]
-joinPairStrip (x, y) = joinStripTwo x y
+joinStripPair :: ([Char], [Char]) -> [Char]
+joinStripPair (x, y) = joinStrip [x,y]
 
 joinSpace :: [[Char]] -> [Char]
 joinSpace = unwords · words · unwords
