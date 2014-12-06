@@ -16,13 +16,11 @@ sayNumber :: (Integral a) => a -> String
 sayNumber n
     | (n == 0) = "zero"
     | (n <  0) = "negative " ++ sayNumber (-n)
-    | (n >  0) = sayPositive n
-      where 
-        sayPositive = join ", " · reverse · map joinStripPair · remove (null · fst) · (`zip` ranks') · triples
-        triples     = map oneTo999 · map (`mod` 1000) · takeWhile (>0) · iterate (`div` 1000)
-        ranks'      = ranks ++ (tail ranks') `zipSpace` (repeat · last $ ranks)
-        oneTo999    = genericIndex       [joinStripPair (x,y) | x <- hundreds, y <- oneTo99]
-        oneTo99     = oneTo9 ++ teens ++ [joinStripPair (x,y) | x <- tens,     y <- oneTo9]
+    | (n >  0) = join ", " · reverse · map joinStripPair · remove (null · fst) · (`zip` ranks') · map oneTo999 · map (`mod` 1000) · takeWhile (>0) · iterate (`div` 1000) $ n
+
+        where ranks'   = ranks ++ (tail ranks') `zipSpace` (repeat · last $ ranks)
+              oneTo999 = genericIndex       [joinStripPair (x,y) | x <- hundreds, y <- oneTo99]
+              oneTo99  = oneTo9 ++ teens ++ [joinStripPair (x,y) | x <- tens,     y <- oneTo9]
 
 --------------------------------------------------------------------------------
 -- Tests for sayNumber
