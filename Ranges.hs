@@ -1,5 +1,5 @@
-import Data.List (nub, sortBy, sort, group, unfoldr, partition)
-import Data.Tuple (swap)
+module Ranges where
+
 import GHC.Exts (sortWith)
 import Utils
 

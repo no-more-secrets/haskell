@@ -31,6 +31,9 @@ fAnd f g x = (f x) && (g x)
 maybeIf :: a -> Bool -> Maybe a
 maybeIf x b = if b then Just x else Nothing
 
+uniform :: (Eq a) => [a] -> Bool
+uniform x = all (==head x) x
+
 groupByKey :: (Eq b) => (a -> b) -> [a] -> [[a]]
 groupByKey f = groupBy ((==) `on` f)
 
@@ -74,8 +77,8 @@ zipSpace = zipWith $ joinTwo " "
 splitIgnore :: Eq a => [a] -> [a] -> [[a]]
 splitIgnore x = remove null · split x
 
-splitComma :: [Char] -> [[Char]]
-splitComma = split ","
+splitC :: [Char] -> [[Char]]
+splitC = split ","
 
 join :: [a] -> [[a]] -> [a]
 join = intercalate

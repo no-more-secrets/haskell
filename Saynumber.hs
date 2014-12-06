@@ -1,27 +1,28 @@
-module Old where
+module Saynumber (sayNumber) where
 
 import Data.List (genericIndex)
 import Utils
 
 --------------------------------------------------------------------------------
--- Say an integer in written form
+-- Say an integer in English form
+
+hundreds = splitC ",one hundred,two hundred,three hundred,four hundred,five hundred,six hundred,seven hundred,eight hundred,nine hundred"
+oneTo9   = splitC ",one,two,three,four,five,six,seven,eight,nine"
+teens    = splitC "ten,eleven,twelve,thirteen,fourteen,fifteen,sixteen,seventeen,eighteen,nineteen"
+tens     = splitC "twenty,thirty,forty,fifty,sixty,seventy,eighty,ninety"
+ranks    = splitC ",thousand,million,billion,trillion,quadrillion"
 
 sayNumber :: (Integral a) => a -> String
 sayNumber n
     | (n == 0) = "zero"
     | (n <  0) = "negative " ++ sayNumber (-n)
-    | (n >  0) = join ", " · reverse · map joinStripPair · remove (null · fst) · (`zip` ranks) · triples $ n
+    | (n >  0) = sayPositive n
       where 
-        triples = map oneTo999 · map (`mod` 1000) · takeWhile (>0) · iterate (`div` 1000)
-          where
-            oneTo999 = genericIndex       [joinStripPair (x,y) | x <- hundreds, y <- oneTo99]
-            oneTo99  = oneTo9 ++ teens ++ [joinStripPair (x,y) | x <- tens,     y <- oneTo9]
-            hundreds = "" : [n++" hundred" | n <- tail oneTo9]
-            oneTo9   = splitComma ",one,two,three,four,five,six,seven,eight,nine"
-            teens    = splitComma "ten,eleven,twelve,thirteen,fourteen,fifteen,sixteen,seventeen,eighteen,nineteen"
-            tens     = splitComma "twenty,thirty,forty,fifty,sixty,seventy,eighty,ninety"
-        ranks = ranks' ++ (tail ranks) `zipSpace` (repeat · last $ ranks')
-          where ranks' = splitComma ",thousand,million,billion,trillion,quadrillion"
+        sayPositive = join ", " · reverse · map joinStripPair · remove (null · fst) · (`zip` ranks') · triples
+        triples     = map oneTo999 · map (`mod` 1000) · takeWhile (>0) · iterate (`div` 1000)
+        ranks'      = ranks ++ (tail ranks') `zipSpace` (repeat · last $ ranks)
+        oneTo999    = genericIndex       [joinStripPair (x,y) | x <- hundreds, y <- oneTo99]
+        oneTo99     = oneTo9 ++ teens ++ [joinStripPair (x,y) | x <- tens,     y <- oneTo9]
 
 --------------------------------------------------------------------------------
 -- Tests for sayNumber

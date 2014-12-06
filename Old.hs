@@ -1,5 +1,3 @@
-module Old where
-
 import Data.Tuple (swap)
 import Utils
 

@@ -1,5 +1,6 @@
-import Data.List (transpose)
+module Prefix (commonPrefix, commonURLPath) where
 
+import Data.List (transpose)
 import Utils
 
 -------------------------------------------------------------
@@ -27,9 +28,6 @@ import Utils
 
 ------------------------------------------------------------- 
 
-uniform :: (Eq a) => [a] -> Bool
-uniform x  = all (==head x) x
-
 transposeCut :: [[a]] -> [[a]]
 transposeCut l = takeWhile ((length l ==) · length) $ transpose l
 
@@ -43,4 +41,3 @@ commonURLPath2 = joinBegin "/" · commonPrefix · map (splitIgnore "/")
 
 commonURLPath :: [String] -> String
 commonURLPath = joinBegin "/" · foldr1 (zipWithWhile first (==)) · map (splitIgnore "/")
-
