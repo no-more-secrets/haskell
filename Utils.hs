@@ -1,6 +1,8 @@
 module Utils where
 
 import Data.List (intercalate, groupBy, genericIndex, isPrefixOf, unfoldr, findIndex, tails)
+import Control.Applicative (Applicative, liftA2)
+import Control.Monad ((<=<))
 import Data.Function (on)
 
 -------------------------------------------------------------
@@ -9,10 +11,35 @@ import Data.Function (on)
 
 --Reading and Writing
 
+readMaybe :: (Read a) => String -> Maybe a
+readMaybe s = case reads (strip s) of
+                  [(x, "")] -> Just x
+                  _         -> Nothing
+
+readIntMay s     = readMaybe s :: Maybe Int
+readIntegerMay s = readMaybe s :: Maybe Integer
+
 readInteger = read :: (String -> Integer)
 
---In insert mode type CTRL-V 183 to get this
+interactLines :: (String -> String) -> IO ()
+interactLines f = interact (f `byLine`)
+
+genIdxMay :: (Integral a) => [b] -> a -> Maybe b
+genIdxMay [] _     = Nothing
+genIdxMay (x:_)  0 = Just x
+genIdxMay (x:xs) i = if i >= 0 then genIdxMay xs (i-1) else Nothing
+
+--In insert mode type CTRL-V 183 to get the · symbol
+
+-- Standard function composition
+(·) :: (b -> c) -> (a -> b) -> a -> c
 (·) = (.)
+-- Applicative function composition
+(··) :: (Applicative f) => f (b -> c) -> f (a -> b) -> f (a -> c)
+(··) = liftA2 (.)
+-- Monadic function composition
+(···) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
+(···) = (<=<)
 
 enumerate :: (Num b, Enum b) => [a] -> [(b, a)]
 enumerate = zip [0..]
@@ -28,17 +55,11 @@ zipWithWhile f g x y = map (uncurry f) $ zipWhile g x y
 fAnd :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 fAnd f g x = (f x) && (g x)
 
-maybeIf :: a -> Bool -> Maybe a
-maybeIf x b = if b then Just x else Nothing
-
 uniform :: (Eq a) => [a] -> Bool
 uniform x = all (==head x) x
 
 groupByKey :: (Eq b) => (a -> b) -> [a] -> [[a]]
 groupByKey f = groupBy ((==) `on` f)
-
-applyPair :: (a -> b) -> a -> (a,b)
-applyPair f x = (x, f x)
 
 first    = const
 keep     = filter
@@ -46,13 +67,9 @@ remove f = keep (not · f)
 notnull  = not · null
 
 strip :: [Char] -> [Char]
-strip = reverse · dropWhile (== ' ') · reverse · dropWhile (== ' ')
+strip = f · f 
+    where f = reverse · dropWhile (==' ')
  
-pairs xs ys = [ (x,y) | x<-xs, y<-ys ]
-
-mapT :: (a -> b, c -> d) -> (a, c) -> (b, d)
-mapT (f, g) (x, y) = (f x, g y)
-
 -- Basic split function
 
 split :: (Eq a) => [a] -> [a] -> [[a]]
@@ -90,7 +107,7 @@ joinTwo :: [a] -> [a] -> [a] -> [a]
 joinTwo c = curry $ joinPair c
 
 joinStripWith :: [Char] -> [[Char]] -> [Char]
-joinStripWith c = strip · join c · map strip
+joinStripWith c = strip · join c · remove null · map strip
 
 joinStrip :: [[Char]] -> [Char]
 joinStrip = joinStripWith " "
@@ -98,10 +115,10 @@ joinStrip = joinStripWith " "
 joinStripPair :: ([Char], [Char]) -> [Char]
 joinStripPair (x, y) = joinStrip [x,y]
 
-joinSpace :: [[Char]] -> [Char]
-joinSpace = unwords · words · unwords
-
 -- Comparison functions
 
 compareWith :: (Ord b) => (a -> b) -> a -> a -> Ordering
 compareWith f x y = compare (f x) (f y)
+
+onReverse f = reverse · f · reverse
+byLine f    = unlines · map f · lines
