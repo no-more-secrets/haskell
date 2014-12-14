@@ -19,7 +19,7 @@ squeezeLine maxLength xs
     | otherwise                = left ++ dots ++ right
         where
             (left, right) = (cut xs, cut `onReverse` xs)
-            cut  = take (maxLength `div` 2 - 1) 
+            cut  = take (maxLength `div` 2 - 1 )
             dots = if even maxLength then ".." else "..."
 
 getMaxLengthArg :: IO (Maybe Int)
