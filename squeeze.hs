@@ -1,28 +1,24 @@
 --------------------------------------------------------------------------------
--- Author: David P. Sicilia
--- Date:   2014-12-13
+-- Author: David P. Sicilia (December 2014)
+--
+-- Description:
+--
 -- This utility will read lines from stdin and will make each line fit within
 -- a specified number of characters by possibly removing characters from the
--- middle and replacing with dots.
+-- middle and replacing with dots.  The maximum line width defaults to 80,
+-- but can be specified as an argument to the program.  In fact, to allow
+-- customization of the default value the program will read all the command
+-- line arguments and take the last one as maximum line width.
 
 import System.Environment (getArgs)
-import Data.Maybe (fromMaybe)
-import Safe (headMay)
+import Data.Maybe         (fromMaybe)
+import Safe               (lastMay)
 import Utils
 
-defaultMaxLength = 80
+--squeezeLine :: Int -> (String -> String)
+squeezeLine n s = if length s <= n then s else (snip s ++ dots ++ snip `onReverse` s)
+    where snip = take (n`div`2 - 1)
+          dots = if even n then ".." else "..."
 
-squeezeLine :: Int -> String -> String
-squeezeLine maxLength xs
-    | (maxLength < 4)          = squeezeLine 4 xs
-    | (length xs <= maxLength) = xs
-    | otherwise                = left ++ dots ++ right
-        where
-            (left, right) = (cut xs, cut `onReverse` xs)
-            cut  = take (maxLength `div` 2 - 1 )
-            dots = if even maxLength then ".." else "..."
-
-getMaxLengthArg :: IO (Maybe Int)
-getMaxLengthArg = fmap (readIntMay ··· headMay) getArgs
-
-main = interactLines · squeezeLine · fromMaybe defaultMaxLength =<< getMaxLengthArg
+main = interactLines · squeezeLine · fromMaybe 80 =<< maxLength
+    where maxLength = (readIntMay ··· lastMay) `fmap` getArgs
