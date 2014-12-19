@@ -37,10 +37,10 @@ genIdxMay (x:xs) i = if i >= 0 then genIdxMay xs (i-1) else Nothing
 -- Applicative function composition
 --() :: (Applicative f) => f (b -> c) -> f (a -> b) -> f (a -> c)
 --() = liftA2 (.)
--- Monadic function composition (C-Vu2025)
-(‥) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
-(‥) = (<=<)
--- ┅ (C-Vu2505)
+-- Monadic function composition
+(··) :: (Monad m) => (b -> m c) -> (a -> m b) -> a -> m c
+(··) = (<=<)
+
 enumerate :: (Num b, Enum b) => [a] -> [(b, a)]
 enumerate = zip [0..]
 enumerate1 :: (Num b, Enum b) => [a] -> [(b, a)]
