@@ -21,8 +21,8 @@ squeezeLine n s = if length s <= n then s else (snip s ++ dots ++ snip `onRevers
           dots = if even n then ".." else "..."
 
 --squeeze :: a -> IO ()
-squeeze = (interactLines ·  squeezeLine ·  fromMaybe 80) ··  maxLength
-    where maxLength _ = fmap (readIntMay ··  lastMay) getArgs
+squeeze = (interactLines · squeezeLine · fromMaybe 80) ·· maxLength
+    where maxLength _ = fmap (readIntMay ·· lastMay) getArgs
 
 --main :: IO ()
 main = squeeze ()

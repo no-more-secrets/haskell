@@ -1,22 +1,39 @@
-import Data.List (unfoldr)
-import Control.Applicative ((<$>), (<*>), pure)
+import Prelude hiding (foldr1, and)
+import Control.Applicative
 import Control.Monad
+import Data.Monoid
+import Data.Foldable
+import Control.Monad.Writer
+
 import Utils
 
 default (Int)
+
+newtype MonoidF a = MonoidF { getMonoidF :: (a -> a) }
+newtype MonoidM m a = MonoidM { getMonoidM :: (a -> m a) }
+
+instance Monoid (MonoidF a) where
+    mempty  = MonoidF id
+    mappend (MonoidF f) (MonoidF g) = MonoidF (f . g)
+
+instance (MonadPlus m) => Monoid (MonoidM m a) where
+    mempty = MonoidM (const mzero)
+    mappend (MonoidM f) (MonoidM g) = MonoidM (f >=> g)
 
 -- Monads
 
 foo n = if n<5 then Nothing else Just (n-1)
 
-chainNf :: (a -> a -> a) -> a -> Int -> a
-chainNf bindf f n = foldr1 bindf · replicate n $ f
+--chainNf :: (a -> a -> a) -> a -> Int -> a
+--chainNf bindf f n = foldr1 bindf · replicate n $ f
+chainNf :: (Monoid a) => a -> Int -> a
+chainNf f n = foldr1 mappend · replicate n $ f
 
-chainNMonad :: (Monad m) => (a -> m a) -> Int -> a -> m a
-chainNMonad = chainNf (>=>)
+chainNMonad :: (MonadPlus m) => (a -> m a) -> Int -> a -> m a
+chainNMonad f = getMonoidM · chainNf (MonoidM f) -- (>=>)
 
 chainNFunc :: (a -> a) -> Int -> a -> a
-chainNFunc = chainNf (.)
+chainNFunc f = getMonoidF · chainNf (MonoidF f) -- (.)
 
 --------------------------------------------------------------------------------
 -- N Queens algorithm in the list monad
@@ -60,3 +77,38 @@ runCalc f = [
     f Nothing (Just 2),
     f Nothing Nothing
     ]
+
+--------------------------------------------------------------------------------
+-- Composition of Applicatives
+
+(<<**>>) :: (Applicative a, Applicative b) => a (b (s -> t)) -> a (b s) -> a (b t)
+x <<**>> y = pure (<*>) <*> x <*> y
+
+(<<$$>>) :: (Applicative a, Applicative b) => (s -> t) -> a (b s) -> a (b t)
+x <<$$>> y = pure (<$>) <*> pure x <*> y
+
+purepure :: (Applicative a, Applicative b) => c -> a (b c)
+purepure = pure · pure
+
+-- Instead try using the Compose type for generality
+
+newtype MaybeApp a b = MaybeApp { getMaybeApp :: Maybe (a b) }
+    deriving (Show)
+
+instance (Functor a) => Functor (MaybeApp a) where
+    fmap f (MaybeApp x) = MaybeApp $ (fmap · fmap) f x
+
+instance (Applicative a) => Applicative (MaybeApp a) where
+    pure x = MaybeApp $ purepure x
+    MaybeApp x <*> MaybeApp y = MaybeApp (x <<**>> y)
+
+fact1 :: Integer -> Writer String Integer
+fact1 0 = return 1
+fact1 n = do
+    let n' = n-1
+    tell $ "We've taken one away from " ++ show n ++ "\n"
+    m <- fact1 n'
+    tell $ "We've called f " ++ show m ++ "\n"
+    let r = n*m
+    tell $ "We've multiplied " ++ show n ++ " and " ++ show m ++ "\n"
+    return r

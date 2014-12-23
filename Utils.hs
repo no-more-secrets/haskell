@@ -55,11 +55,12 @@ zipWithWhile f g x y = map (uncurry f) $ zipWhile g x y
 fAnd :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 fAnd f g x = (f x) && (g x)
 
+-- This is safe since if the list is empty the "head" function will not be called
 uniform :: (Eq a) => [a] -> Bool
 uniform x = all (==head x) x
 
 groupByKey :: (Eq b) => (a -> b) -> [a] -> [[a]]
-groupByKey f = groupBy ((==) `on` f)
+groupByKey f = groupBy ((==)`on`f)
 
 first    = const
 keep     = filter
