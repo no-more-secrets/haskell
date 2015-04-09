@@ -3,11 +3,37 @@ import Control.Applicative
 import Control.Monad
 import Data.Monoid
 import Data.Foldable
+import Data.Either
 import Control.Monad.Writer
+import Safe
 
 import Utils
 
 default (Int)
+
+--------------------------------------------------------------------------------
+-- Error handling
+
+maybeToEither :: String -> Maybe a -> Either String a
+maybeToEither s (Just result) = Right result
+maybeToEither s _ = Left s
+
+printEither (Left s)  = print s
+printEither (Right v) = print v
+
+args    = True
+theargs = ["1","2","3","x"]
+
+getargs       = maybeToEither "No args available!" (if args then Just theargs else Nothing)
+getargat as   = maybeToEither "Invalid index!" .   atMay as
+readarg       = maybeToEither "Invalid integer!" . readMay
+divideByTwo n = maybeToEither "Error: odd number!" (if even n then Just (n `div` 2) else Nothing)
+
+process = divideByTwo <=< readarg <=< (flip getargat) 3
+
+main = printEither (process =<< getargs)
+
+--------------------------------------------------------------------------------
 
 newtype MonoidF a = MonoidF { getMonoidF :: (a -> a) }
 newtype MonoidM m a = MonoidM { getMonoidM :: (a -> m a) }
@@ -38,25 +64,25 @@ chainNFunc f = getMonoidF · chainNf (MonoidF f) -- (.)
 --------------------------------------------------------------------------------
 -- N Queens algorithm in the list monad
 
-queens :: (Num a, Enum a, Num b) => a -> b -> [[a]]
-queens m 0 = [[]]
-queens m n = do
-    qs <- queens m (n-1)
-    q  <- [1..m]
-    guard (safe q qs)
-    return (q:qs)
-    where
-        safe q qs = and [ noattack q r | r <- enumerate1 qs ]
-            where noattack q (i,x) = (q /= x) && (abs (q-x) /= i)
+--queens :: (Num a, Enum a, Num b) => a -> b -> [[a]]
+--queens m 0 = [[]]
+--queens m n = do
+--    qs <- queens m (n-1)
+--    q  <- [1..m]
+--    guard (safe q qs)
+--    return (q:qs)
+--    where
+--        safe q qs = and [ noattack q r | r <- enumerate1 qs ]
+--            where noattack q (i,x) = (q /= x) && (abs (q-x) /= i)
 
-queensNN n = queens n n
-queens88   = queens 8 8
+--queensNN n = queens n n
+--queens88   = queens 8 8
 
 --------------------------------------------------------------------------------
 -- main
 
-main :: IO ()
-main = putStrLn "Hello"
+--main :: IO ()
+--main = putStrLn "Hello"
 
 --calcF :: Maybe Int -> Maybe Int -> Maybe (Maybe Int)
 calcF year born = fmap (\f -> fmap f born) (fmap (-) year)
