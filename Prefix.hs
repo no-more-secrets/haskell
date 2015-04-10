@@ -1,6 +1,6 @@
-module Prefix (commonPrefix, commonURLPath) where
+module Prefix (commonURLPath) where
 
-import Data.List (transpose)
+--import Data.List (transpose)
 import Utils
 
 -------------------------------------------------------------
@@ -28,16 +28,24 @@ import Utils
 
 ------------------------------------------------------------- 
 
-transposeCut :: [[a]] -> [[a]]
-transposeCut l = takeWhile ((length l ==) · length) $ transpose l
+--transposeCut :: [[a]] -> [[a]]
+--transposeCut l = takeWhile ((length l ==) · length) $ transpose l
 
-commonPrefix :: (Eq a) => [[a]] -> [a]
-commonPrefix = map head · takeWhile uniform · transposeCut
+--commonPrefix :: (Eq a) => [[a]] -> [a]
+--commonPrefix = map head · takeWhile uniform · transposeCut
 
 ------------------------------------------------------------- 
 
-commonURLPath2 :: [[Char]] -> [Char]
-commonURLPath2 = joinBegin "/" · commonPrefix · map (splitIgnore "/")
+--commonURLPath2 :: [[Char]] -> [Char]
+--commonURLPath2 = joinBegin "/" · commonPrefix · map (splitIgnore "/")
 
-commonURLPath :: [String] -> String
-commonURLPath = joinBegin "/" · foldr1 (zipWithWhile first (==)) · map (splitIgnore "/")
+--commonURLPath :: [String] -> String
+--commonURLPath = joinBegin "/" · foldr1 (zipWithWhile first (==)) · map (splitIgnore "/")
+
+(unslashes, slashes) = (join "/", split "/")
+
+--commonPrefix :: (Eq a) => [a] -> [a] -> [a]
+commonPrefix x y = [w | (w,v) <- zip x y, w == v]
+
+--commonURLPath :: [String] -> String
+commonURLPath = unslashes . foldr1 commonPrefix . map slashes
