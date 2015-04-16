@@ -42,10 +42,22 @@ import Utils
 --commonURLPath :: [String] -> String
 --commonURLPath = joinBegin "/" · foldr1 (zipWithWhile first (==)) · map (splitIgnore "/")
 
-(unslashes, slashes) = (join "/", split "/")
+------------------------------------------------------------- 
 
 --commonPrefix :: (Eq a) => [a] -> [a] -> [a]
-commonPrefix x y = [w | (w,v) <- zip x y, w == v]
+commonPrefix xs ys = map fst . takeWhile (uncurry (==)) $ zip xs ys
+
+(unslashes, slashes) = (join "/", split "/")
 
 --commonURLPath :: [String] -> String
 commonURLPath = unslashes . foldr1 commonPrefix . map slashes
+
+
+runTests = if and tests then "Passed" else "Failed"
+
+tests = [ commonURLPath ["", ""]           == "",
+          commonURLPath ["/", "/"]         == "/",
+          commonURLPath ["A", "A"]         == "A",
+          commonURLPath ["/A", "/A"]       == "/A",
+          commonURLPath ["A/", "A/"]       == "A/",
+          commonURLPath ["A/B/C", "A/B/C"] == "A/B/C" ]
