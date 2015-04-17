@@ -26,13 +26,16 @@ rangesUnion = merge · sortWith fst · fmap sortPair
 -- User operations
 
 makeRanges     :: (Num a, Ord a)         => [a]     -> [(a,a)]
-expandRanges   :: (Enum a, Num a, Ord a) => [(a,a)] -> [a]
-showRanges     :: (Show a, Eq a)         => [(a,a)] -> String
-readRanges     :: (Read a)               => String  -> [(a,a)]
-simplifyRanges :: String -> String
-
 makeRanges      = rangesUnion · fmap (\x -> (x,x))
+
+expandRanges   :: (Enum a, Num a, Ord a) => [(a,a)] -> [a]
 expandRanges    = concat · fmap (uncurry enumFromTo) · rangesUnion
+
+showRanges     :: (Show a, Eq a)         => [(a,a)] -> String
 showRanges      = unwords · fmap (\(x,y) -> show x ++ (if x == y then "" else "-" ++ show y))
+
+readRanges     :: (Read a)               => String  -> [(a,a)]
 readRanges      = fmap (\x -> (head x, last x)) · fmap (fmap read) · fmap (split "-") · splitIgnore " "
+
+simplifyRanges :: String -> String
 simplifyRanges  = showRanges · rangesUnion · readRanges
