@@ -55,6 +55,9 @@ zipWithWhile f g x y = map (uncurry f) $ zipWhile g x y
 fAnd :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 fAnd f g x = (f x) && (g x)
 
+mapFst :: (a -> c) -> [(a, b)] -> [(c, b)]
+mapFst f = map $ \(x,y) -> (f x, y)
+
 -- This is safe since if the list is empty the "head" function will not be called
 uniform :: (Eq a) => [a] -> Bool
 uniform x = all (==head x) x

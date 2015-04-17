@@ -1,7 +1,8 @@
 module Prefix (commonURLPath) where
 
---import Data.List (transpose)
+import Data.List (transpose)
 import Utils
+import Colocate
 
 -------------------------------------------------------------
 
@@ -44,20 +45,44 @@ import Utils
 
 ------------------------------------------------------------- 
 
+(unslashes, slashes) = (join "/", split "/")
+
 --commonPrefix :: (Eq a) => [a] -> [a] -> [a]
 commonPrefix xs ys = map fst . takeWhile (uncurry (==)) $ zip xs ys
-
-(unslashes, slashes) = (join "/", split "/")
 
 --commonURLPath :: [String] -> String
 commonURLPath = unslashes . foldr1 commonPrefix . map slashes
 
+------------------------------------------------------------- 
+-- Tests
 
-runTests = if and tests then "Passed" else "Failed"
+showTests = (unlines . colocate) matrix
+    where
+        matrix   = transpose tests ++ [column " = ", output, column " ?= ", baseline, map show results]
+        column s = replicate (length tests) s
 
-tests = [ commonURLPath ["", ""]           == "",
-          commonURLPath ["/", "/"]         == "/",
-          commonURLPath ["A", "A"]         == "A",
-          commonURLPath ["/A", "/A"]       == "/A",
-          commonURLPath ["A/", "A/"]       == "A/",
-          commonURLPath ["A/B/C", "A/B/C"] == "A/B/C" ]
+runTests = and results
+
+results  = zipWith (==) output baseline
+output   = map commonURLPath tests
+
+tests = [ ["/",       "/"],
+          ["",        ""],
+          ["A",       "A"],
+          ["/A",      "/A"],
+          ["A/",      "A/"],
+          ["A/B",     "A/B"],
+          ["A/B/C",   "A/B/C"],
+          ["A/B/X/D", "A/B/C/D"] ]
+
+baseline = [ "/",
+             "",
+             "A",
+             "/A",
+             "A/",
+             "A/B",
+             "A/B/C",
+             "A/B" ]
+
+-- End
+------------------------------------------------------------- 
