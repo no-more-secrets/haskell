@@ -1,13 +1,14 @@
 module Columns where
 
+import Safe (atDef)
 import System.Environment (getArgs)
-import Ranges (expandRanges, readRanges)
 import Utils (interactLines)
 
 --argsToAction :: [String] -> String -> String
-argsToAction args = unwords . select . words
+argsToAction args = unwords . selectFrom . words
     where
-        select xs = map (xs !!) indexes
-        indexes   = (expandRanges . readRanges . unwords) args
+        selectFrom xs = map (atDef "" xs) indexes
+        indexes       = map read args
 
-main = interactLines =<< fmap argsToAction getArgs
+--main :: IO ()
+main = interactLines =<< argsToAction `fmap` getArgs
