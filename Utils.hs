@@ -52,6 +52,9 @@ zipWhile f x y = takeWhile (uncurry f) $ zip x y
 zipWithWhile :: (a -> b -> c) -> (a -> b -> Bool) -> [a] -> [b] -> [c]
 zipWithWhile f g x y = map (uncurry f) $ zipWhile g x y
 
+uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 f (x,y,z) = f x y z
+
 fAnd :: (a -> Bool) -> (a -> Bool) -> a -> Bool
 fAnd f g x = (f x) && (g x)
 
@@ -74,6 +77,9 @@ strip :: [Char] -> [Char]
 strip = f · f 
     where f = reverse · dropWhile (==' ')
  
+equating :: (Eq b) => (a -> b) -> a -> a -> Bool
+equating f = (==) `on` f
+
 -- Basic split function
 
 split :: (Eq a) => [a] -> [a] -> [[a]]
@@ -109,6 +115,8 @@ joinPair c (x,y) = join c [x,y]
 
 joinTwo :: [a] -> [a] -> [a] -> [a]
 joinTwo c = curry $ joinPair c
+
+onLines f = unlines . f . lines
 
 joinStripWith :: [Char] -> [[Char]] -> [Char]
 joinStripWith c = strip · join c · remove null · map strip

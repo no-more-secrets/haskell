@@ -1,4 +1,4 @@
-module Prefix (commonURLPath) where
+module Prefix (commonURLPath, commonPrefix, unslashes, slashes) where
 
 import Data.List (transpose)
 import Utils
