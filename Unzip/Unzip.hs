@@ -1,3 +1,4 @@
+--------------------------------------------------------------------------------
 -- Unzip Optimizer
 --
 -- Takes a number of processes and a String consisting of a list of files
@@ -21,34 +22,27 @@ module Unzip (optimize) where
 
 import Data.List (sort, groupBy, partition)
 import Prefix    (commonPrefix, slashes, unslashes)
-import Utils     (onLines, equating)
+import Utils     (onLines, groupByKey)
 
 --------------------------------------------------------------------------------
--- Interface
 -- Inputs: Max number of targets, file list as output by unzip -l (last column)
 
 optimize :: Int -> String -> String
-optimize processes = onLines (map unslashes . optimize' . map slashes . sort)
-    where optimize' = uncurry (++) . partition (null . last) . distribute processes
+optimize n = onLines (map unslashes . optimize' . map slashes . sort)
+    where optimize' = uncurry (++) . partition (null . last) . distribute n
 
 --------------------------------------------------------------------------------
 -- Implementation
+-- type Path = [String]
+-- distribute :: Int -> [Path] -> [Path]
 
--- distribute :: Int -> [[String]] -> [[String]]
-distribute count paths
-    | (null . tail) paths    = paths
-    | (count < length items) = return (foldr1 commonPrefix paths)
-    | otherwise              = recurse =<< (zip (scale count lengths) items)
+distribute n paths
+    | (null . tail) paths = paths
+    | (n < length items)  = [foldr1 commonPrefix paths]
+    | otherwise           = concatMap recurse (zip3 scaled keys items)
     where
-        items   = groupBy (equating head) paths
-        lengths = map length items
-
-        --scale :: Int -> [Int] -> [Int]
-        scale count = map (max 1 . floor . (*fromIntegral count)) . normalize
-
-        --normalize :: (Fractional a) => [Int] -> [a]
-        normalize xs = map (/ fromIntegral (sum xs)) (map fromIntegral xs)
-
-        --recurse :: (Int, String, [[String]]) -> [[String]]
-        recurse (newCount, newPaths) = (map (prefix:) . distribute newCount . map tail) newPaths
-            where prefix = (head . head) newPaths
+        (keys, items) = (unzip . groupByKey head) paths
+        --recurse :: (Int, String, [Path]) -> [Path]
+        recurse (m, key, paths') = map (key:) . distribute m . map tail $ paths'
+        scaled = [max 1 (n*x `div` sum lengths) | x <- lengths]
+            where lengths = map length items

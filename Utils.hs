@@ -65,8 +65,13 @@ mapFst f = map $ \(x,y) -> (f x, y)
 uniform :: (Eq a) => [a] -> Bool
 uniform x = all (==head x) x
 
-groupByKey :: (Eq b) => (a -> b) -> [a] -> [[a]]
-groupByKey f = groupBy ((==)`on`f)
+groupByKey :: (Eq b) => (a -> b) -> [a] -> [(b, [a])]
+groupByKey f xs = applyZip (f . head) groups
+    where groups = groupBy ((==)`on`f) xs
+--groupByKey f = mapFst head . unzip . groupBy (equating fst) . applyZip f
+
+applyZip :: (a -> b) -> [a] -> [(b,a)]
+applyZip f xs = zip (map f xs) xs
 
 first    = const
 keep     = filter
