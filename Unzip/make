@@ -1,0 +1,2 @@
+#!/bin/bash
+ghc -O3 --make Main.hs -i/home/dsicilia/dev/haskell/Haskell-Utils -o unzipOptimizer
