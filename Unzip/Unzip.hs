@@ -20,7 +20,7 @@
 
 module Unzip (optimize) where
 
-import Data.List (sort, groupBy, partition)
+import Data.List (sort, partition)
 import Prefix    (commonPrefix, slashes, unslashes)
 import Utils     (onLines, groupByKey)
 
@@ -36,8 +36,8 @@ optimize n = onLines (map unslashes . optimize' . map slashes . sort)
 -- type Path = [String]
 -- distribute :: Int -> [Path] -> [Path]
 
+distribute _ [path] = [path]
 distribute n paths
-    | (null . tail) paths = paths
     | (n < length items)  = [foldr1 commonPrefix paths]
     | otherwise           = concatMap recurse (zip3 scaled keys items)
     where
