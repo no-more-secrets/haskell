@@ -34,15 +34,16 @@ optimize n = onLines (map unslashes . optimize' . map slashes . sort)
 --------------------------------------------------------------------------------
 -- Implementation
 -- type Path = [String]
--- distribute :: Int -> [Path] -> [Path]
 
+-- distribute :: Int -> [Path] -> [Path]
 distribute _ [path] = [path]
 distribute n paths
-    | (n < length items)  = [foldr1 commonPrefix paths]
-    | otherwise           = concatMap recurse (zip3 scaled keys items)
+    | (n < length items) = [foldr1 commonPrefix paths]
+    | otherwise          = recurse =<< zip3 weights keys items
     where
+        --items :: [[Path]]
         (keys, items) = (unzip . groupByKey head) paths
         --recurse :: (Int, String, [Path]) -> [Path]
         recurse (m, key, paths') = map (key:) . distribute m . map tail $ paths'
-        scaled = [max 1 (n*x `div` sum lengths) | x <- lengths]
+        weights = [n*x`div`sum lengths | x <- lengths]
             where lengths = map length items
