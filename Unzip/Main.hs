@@ -1,4 +1,5 @@
 import System.Environment (getArgs)
 import Unzip (optimize)
+import Utils (onLines)
 
-main = (interact . optimize . read . head) =<< getArgs
+main = (interact . onLines . optimize . read . head) =<< getArgs
