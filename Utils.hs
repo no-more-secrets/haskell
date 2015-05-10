@@ -76,6 +76,7 @@ applyZip f xs = zip (map f xs) xs
 first    = const
 keep     = filter
 remove f = keep (not · f)
+notnull :: (Foldable t) => t a -> Bool
 notnull  = not · null
 
 strip :: [Char] -> [Char]
@@ -122,6 +123,7 @@ joinTwo :: [a] -> [a] -> [a] -> [a]
 joinTwo c = curry $ joinPair c
 
 onLines f = unlines . f . lines
+onWords f = unwords . f . words
 
 joinStripWith :: [Char] -> [[Char]] -> [Char]
 joinStripWith c = strip · join c · remove null · map strip
