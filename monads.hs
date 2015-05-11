@@ -6,10 +6,60 @@ import Data.Foldable
 import Data.Either
 import Control.Monad.Writer
 import Safe
+import System.Random (Random, StdGen, getStdGen, random, randomR, randoms)
 
 import Utils
 
 default (Int)
+
+--------------------------------------------------------------------------------
+-- Random
+
+data Where = Here | There | Nowhere
+    deriving (Show, Enum)
+
+newtype RandomM g a = RandomM { runRandomM :: g -> (a,g) }
+
+instance Functor (RandomM g) where
+    f `fmap` (RandomM h) = RandomM $ \g -> let (r,g') = h g
+                                            in (f r, g')
+
+instance Applicative (RandomM g) where
+    pure x = RandomM $ \g -> (x,g)
+    (RandomM f) <*> (RandomM h) = RandomM m
+        where m = \g -> let (r,g')  = h g
+                            (s,g'') = f g'
+                         in (s r, g'')
+
+instance Monad (RandomM g) where
+    return = pure
+    x >>= f = RandomM $ \g -> let (a,g') = runRandomM x g
+                               in runRandomM (f a) g'
+
+instance Random Where where
+    random g = let rInt :: Int
+                   (rInt, g') = randomR (1,6) g
+                   randWhere | (rInt < 2) = Here
+                             | (rInt < 3) = There
+                             | otherwise  = Nowhere
+                in (randWhere, g')
+
+    randomR (x,y) g = let (res, g') = randomR (fromEnum x, fromEnum y) g
+                       in (toEnum res, g')
+
+getRandom :: (Random a) => RandomM StdGen a
+getRandom = RandomM random
+
+result :: (Random a) => RandomM StdGen (a,a)
+result = do
+    n1 <- getRandom
+    n2 <- getRandom
+    return (n1,n2)
+
+randomResult :: StdGen -> (Where,Where)
+randomResult = fst . runRandomM result
+
+randomMain = print . randomResult =<< getStdGen
 
 --------------------------------------------------------------------------------
 -- Error handling

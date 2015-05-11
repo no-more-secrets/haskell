@@ -2,7 +2,7 @@
 -- display them side-by-side to stdout.  NOTE: this will not work
 -- properly with files containing tab characters.
 
-module Colocate (colocate) where
+module Colocate (colocate, pad, main) where
 
 import Data.List (transpose)
 import System.Environment (getArgs)

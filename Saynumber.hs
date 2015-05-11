@@ -1,3 +1,7 @@
+--------------------------------------------------------------------------------
+-- Say an integer in English form
+--------------------------------------------------------------------------------
+
 module Saynumber (sayNumber) where
 
 import Data.List (genericIndex)
@@ -5,24 +9,49 @@ import Control.Monad (guard)
 import Utils
 
 --------------------------------------------------------------------------------
--- Say an integer in English form
+-- Create list of written numbers < 1000
+--------------------------------------------------------------------------------
 
-oneTo19  = (enumerate · splitC) ",one,two,three,four,five,six,seven,eight,nine,ten,eleven,twelve,thirteen,fourteen,fifteen,sixteen,seventeen,eighteen,nineteen"
-hundreds = (enumerate · splitC) ",one hundred,two hundred,three hundred,four hundred,five hundred,six hundred,seven hundred,eight hundred,nine hundred"
-tens     = (enumerate · splitC) ",twenty,thirty,forty,fifty,sixty,seventy,eighty,ninety"
-ranks    = splitC ",thousand,million,billion,trillion,quadrillion"
+es = enumerate · splitC
 
-sayNumber :: (Integral a) => a -> String
-sayNumber n
-    | (n == 0)  = "zero"
-    | (n <  0)  = "negative " ++ sayNumber (-n)
-    | otherwise = join ", " · reverse · map joinStripPair · remove (null · fst) · flip zip ranks' · map (genericIndex oneTo999 · flip mod 1000) · takeWhile (>0) · iterate (`div` 1000) $ n
+oneTo19  = es ",one,two,three,four,five,six,seven,eight,nine,ten,eleven,twelve,thirteen,fourteen,fifteen,sixteen,seventeen,eighteen,nineteen"
+hundreds = es ",one hundred,two hundred,three hundred,four hundred,five hundred,six hundred,seven hundred,eight hundred,nine hundred"
+tens     = es ",twenty,thirty,forty,fifty,sixty,seventy,eighty,ninety"
 
-        where oneTo999 = [ joinStrip [x,y,z] | (x',x) <- hundreds, (y',y) <- tens, (z',z) <- oneTo19, (y'==0 || z'<10) ]
-              ranks'   = ranks ++ (tail ranks') `zipSpace` (repeat · last $ ranks)
+oneTo999 = do
+    (x',x) <- hundreds
+    (y',y) <- tens
+    (z',z) <- oneTo19
+    guard (y'==0 || z'<10)
+    return (joinStrip [x,y,z])
 
 --------------------------------------------------------------------------------
+-- Create infinite list of ranks
+--------------------------------------------------------------------------------
+
+ranks = ranks' ++ (tail ranks) `zipSpace` (repeat · last $ ranks')
+    where ranks' = splitC ",thousand,million,billion,trillion,quadrillion"
+
+--------------------------------------------------------------------------------
+-- Say any positive number using the above
+--------------------------------------------------------------------------------
+
+sayPositive :: (Integral a) => a -> String
+sayPositive = join ", " · reverse · map joinStripPair · remove (null · fst) · flip zip ranks · map (genericIndex oneTo999) · triples
+    -- Take an integer and return a list of its triples of digits
+    where triples = map (flip mod 1000) · takeWhile (>0) · iterate (`div` 1000)
+
+--------------------------------------------------------------------------------
+-- Add support for zero and negative
+--------------------------------------------------------------------------------
+
+sayNumber :: (Integral a) => a -> String
+sayNumber 0 = "zero"
+sayNumber n = if n > 0 then sayPositive n else "negative " ++ sayNumber (-n)
+    
+--------------------------------------------------------------------------------
 -- Tests for sayNumber
+--------------------------------------------------------------------------------
 
 runTests = putStrLn $ if and sayNumberTests then "Success" else "Failed"
 
