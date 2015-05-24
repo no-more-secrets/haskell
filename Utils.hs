@@ -141,3 +141,6 @@ compareWith f x y = compare (f x) (f y)
 
 onReverse f = reverse · f · reverse
 byLine f    = unlines · map f · lines
+
+sortPair :: (Ord a) => (a,a) -> (a,a)
+sortPair (x,y) = if x < y then (x,y) else (y,x)
