@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- Columns
 --
--- This module will take a list of integers an will read lines from stdin an
+-- This module will take a list of integers and will read lines from stdin and
 -- select the columns corresponding to the input integers in the order
 -- in which they are specified.  The first column has index 0.
 
