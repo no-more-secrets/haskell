@@ -125,6 +125,11 @@ joinTwo c = curry $ joinPair c
 onLines f = unlines . f . lines
 onWords f = unwords . f . words
 
+paragraphs :: String -> [String]
+paragraphs = map unlines . split [""] . lines
+unparagraphs :: [String] -> String
+unparagraphs = intercalate "\n"
+
 joinStripWith :: [Char] -> [[Char]] -> [Char]
 joinStripWith c = strip · join c · remove null · map strip
 
@@ -141,6 +146,9 @@ compareWith f x y = compare (f x) (f y)
 
 onReverse f = reverse · f · reverse
 byLine f    = unlines · map f · lines
+byParagraph f = unparagraphs · map f · paragraphs
 
 sortPair :: (Ord a) => (a,a) -> (a,a)
 sortPair (x,y) = if x < y then (x,y) else (y,x)
+
+mapPair f (x,y) = (f x,f y)
