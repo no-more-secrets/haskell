@@ -7,22 +7,16 @@ import Data.List (unfoldr)
 import Data.Maybe (fromMaybe)
 import Safe (headMay, readMay)
 import System.Environment (getArgs)
-import Utils (byParagraph)
+import Utils (byParagraph, unfoldrList)
 
--- Take number of columns and input string and return a
--- transformed input string consisting of the words in
--- the input string broken up into lines that will fit
--- within the width specified by columns.  Note that,
--- when being reconstructed in the output, the words from
--- the input will be separated by exactly one space even
--- if this was not the case in the input and also that
--- paragraphs will be retained and left separated by a
--- single blank line.  If a word is longer than columns
--- then it is put on its own line.
+-- Take number of columns and input string representing a
+-- document and reformats the text so that it fits within
+-- the specified number of columns while preserving paragraphs.
 format :: Int -> String -> String
-format n = byParagraph (unlines . map unwords . unfoldr oneLine . words)
-  where oneLine wrds = if null wrds then Nothing else Just (oneLine' wrds)
-        oneLine' = splitAt . max 1 =<< length . takeWhile (<=n) . scanl1 (+) . map ((+1) . length)
+format n = byParagraph (unlines . map unwords . unfoldrList oneLine . words)
+  where
+    oneLine :: [String] -> ([String],[String])
+    oneLine = splitAt . max 1 =<< length . takeWhile (<=n) . scanl1 (+) . map ((+1) . length)
 
 -- Read columns from argument list (default to 70) and
 -- then start reading from stdin and transform the text.

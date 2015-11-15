@@ -152,3 +152,11 @@ sortPair :: (Ord a) => (a,a) -> (a,a)
 sortPair (x,y) = if x < y then (x,y) else (y,x)
 
 mapPair f (x,y) = (f x,f y)
+
+-- An unfoldr function for lists that keeps running until
+-- the input (which is a list) becomes empty.
+unfoldrList :: ([b] -> (a,[b])) -> [b] -> [a]
+unfoldrList f = unfoldr f'
+    where
+        f' [] = Nothing
+        f' xs = Just (f xs)
