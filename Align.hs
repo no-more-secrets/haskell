@@ -11,8 +11,8 @@ import Colocate (colocate, pad)
 import Data.List (transpose)
 import Utils (onLines)
 
---align :: [String] -> [String]
+align :: [String] -> [String]
 align = colocate . transpose . pad [] . map words
 
---main :: IO ()
+main :: IO ()
 main = (interact . onLines) align

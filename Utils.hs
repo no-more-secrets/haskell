@@ -80,9 +80,9 @@ notnull :: (Foldable t) => t a -> Bool
 notnull  = not · null
 
 strip :: [Char] -> [Char]
-strip = f · f 
+strip = f · f
     where f = reverse · dropWhile (==' ')
- 
+
 equating :: (Eq b) => (a -> b) -> a -> a -> Bool
 equating f = (==) `on` f
 
@@ -160,3 +160,6 @@ unfoldrList f = unfoldr f'
     where
         f' [] = Nothing
         f' xs = Just (f xs)
+
+chunk :: Int -> [a] -> [[a]]
+chunk = unfoldrList . splitAt
