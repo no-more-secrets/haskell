@@ -1,7 +1,7 @@
 import System.Environment (getArgs)
-import SmartFormat (fmt)
+import SmartFormat (go)
 
 main = do
     (n:_) <- map read <$> getArgs
-    putStrLn (replicate n '-')
-    interact (fmt n)
+    --putStrLn (replicate n '-')
+    interact (go n)

@@ -18,6 +18,7 @@ module Utils ( ascListByValue
              , onWords
              , remove
              , sortPair
+             , startsWith
              , strip
              , uncurry3
              , unfoldrList
@@ -27,11 +28,14 @@ module Utils ( ascListByValue
              , zipWithWhile
              ) where
 
-import Data.List     (groupBy, unfoldr)
+import Data.List     (groupBy, unfoldr, isPrefixOf)
 import Data.Function (on)
 
 version :: Int
 version = 1
+
+startsWith :: (Eq a) => [a] -> [a] -> Bool
+startsWith x y = y`isPrefixOf`x
 
 commonPrefix :: (Eq a) => [a] -> [a] -> [a]
 commonPrefix x = map fst . takeWhile (uncurry (==)) . zip x
