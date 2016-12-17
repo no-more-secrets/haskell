@@ -12,6 +12,7 @@ module Utils ( ascListByValue
              , interactLines
              , keep
              , mapFst
+             , merge
              , onLines
              , onReverse
              , onWords
@@ -45,6 +46,10 @@ enumerate :: (Num b, Enum b) => [a] -> [(b, a)]
 enumerate = zip [0..]
 enumerate1 :: (Num b, Enum b) => [a] -> [(b, a)]
 enumerate1 = zip [1..]
+
+merge :: [a] -> [a] -> [a]
+merge []     ys = ys
+merge (x:xs) ys = x:merge ys xs
 
 zipWhile :: (a -> b -> Bool) -> [a] -> [b] -> [(a,b)]
 zipWhile f x y = takeWhile (uncurry f) $ zip x y

@@ -1,55 +1,60 @@
+-- ==============================================================
+-- This module contains functionality for wrapping and justifying
+-- text, either normal text  or  certain  types of code comments.
+-- ==============================================================
 module SmartFormat (fmt) where
 
-import Utils (commonPrefixAll, unfoldrList, chunks)
+import Data.List (sort, group)
+import Utils     (unfoldrList, merge)
 
--- just like map, but apply f only to elements after the first.
-mapTail :: (a -> a) -> [a] -> [a]
-mapTail _ []     = []
-mapTail f (x:xs) = x:map f xs
-
--- Take number of columns and input string representing a
--- document and reformats the text so that it fits within
--- the specified number of columns.
+-- Take  number  of  columns  and  input  string  representing  a
+-- document and reformats the  text  so  that  it fits within the
+-- specified number of columns.
 para :: Int -> [String] -> [[String]]
 para n = unfoldrList (splitAt =<< longestFit)
   where
-    -- Max number of words that can fit in width n (possibly
-    -- none).  By "fit" it is meant to include the spaces that
+    -- Max number of words  that  can  fit  in  width n (possibly
+    -- none). By "fit" it  is  meant  to  include the spaces that
     -- would be inserted between words if they were to be joined.
-    -- If not even the first word fits then the function will
-    -- return one since the word must go on a line.
+    -- If not even the  first  word  fits  then the function will
+    -- return   one   since   the  word  must  go  on   a   line.
     longestFit :: [String] -> Int
-    longestFit = max 1 . length . takeWhile (<=n) . scanl1 (+) .
-                 mapTail (+1) . map length
+    longestFit = max 1             .
+                 length            .
+                 takeWhile (<=n)   .
+                 zipWith (+) [0..] .
+                 scanl1 (+)        .
+                 map length
 
--- An unwords function with user-defined number of spaces
--- between words.
-unwordsN :: Int -> [String] -> String
-unwordsN n = concat . mapTail (replicate n ' ' ++)
+-- Generate   an  infinite  sequence  of  indices  which  are  to
+-- represent the positions of "slots" between words. The sequence
+-- of indices in the returned list  determines the order in which
+-- individual space characters are  distributed  among slots when
+-- justifying a line.
+distribute :: Int -> [Int]
+distribute n = cycle $ [0..n]`merge`reverse [0..n]
 
--- Division that rounds to positive infinity.  This works
--- because `div` rounds to negative infinity.
-divPI :: (Integral a) => a -> a -> a
-x`divPI`y = -((-x)`div`y)
-
+-- Basically like "unwords" except  it  takes  an  integer and it
+-- will ensure (well, most of the  time) that the returned string
+-- contains enough spaces between words  so  as  to span a length
+-- equal to that  integer.  Exceptions  to  that  are  if  a line
+-- contains only a single  word,  or  if  stretching the line for
+-- entail adding more spaces than  there are characters; in those
+-- exceptional cases the  result  is  equivalent  to just calling
+-- "unwords".
 justify :: Int -> [String] -> String
-justify width xs | slots <= 0 = single
-                 | need  <  0 = single
-                 | base  >  5 = single
-                 | need' == 0 = short xs
-                 | otherwise  = inflated xs
+justify _ []     = ""
+justify _ (x:[]) = x
+justify w xs
+    | need > noSpace = unwords xs
+    | otherwise      = inflate
   where
-    inflated :: [String] -> String
-    inflated = long . map short . chunks (slots`divPI`need')
+    noSpace = length (concat xs)
+    need    = w - noSpace
+    inflate = concat     . merge xs . map (`replicate`' ') .
+              map length . group    . sort . take need .
+              distribute $ length xs-2
 
-    single = unwords xs
-    need   = width - length single
-    slots  = length xs - 1
-
-    (base, need') = (need`div`slots, need`mod`slots)
-
-    short, long :: [String] -> String
-    (short, long) = (unwordsN $ base+1, unwordsN $ base+2)
-
+-- Exported drivers
 fmt :: Int -> String -> String
 fmt n = unlines . map (justify n) . para n . words
