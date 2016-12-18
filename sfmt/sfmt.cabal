@@ -18,4 +18,5 @@ executable sfmt
   other-modules:       SmartFormat
   build-depends:       base >= 4.7 && < 5,
                        ds-utils,
-                       safe
+                       safe,
+                       split
