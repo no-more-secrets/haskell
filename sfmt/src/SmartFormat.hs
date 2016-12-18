@@ -80,7 +80,8 @@ fixLine s = if 94*length s >= 100*length s' then s' else s
 -- intended to be called  after  any preprocessing functions have
 -- e.g. removed spaces or comment prefixes.
 fmtPara :: FMT
-fmtPara n = fixLine . unlines . map (justify n) . wrapPara n . words
+fmtPara n = unlines . map justify' . wrapPara n . words
+  where justify' = fixLine . justify n
 
 -- ==============================================================
 --                       Formatting wrappers
