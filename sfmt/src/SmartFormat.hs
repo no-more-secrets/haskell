@@ -62,26 +62,26 @@ justify w xs = concat . merge xs . map ((`replicate`' ') . length)
         | n <= 0    = []
         | otherwise = cycle $ [0..n-1]`merge`reverse [0..n-1]
 
-
--- This function will take a single line and will check to see if
--- there are an "excessive" number of spaces in it (due to
--- application of the "justify" function) and, if so, will reduce
--- it to one space per word. This is to prevent a situation where
--- e.g. a line only contains two words and the `justify` function
--- puts 60 spaces between them to  make  it fit the target column
--- width. The two weighting numbers used in the length comparison
--- were chosen since they seem to produce reasonable-looking
--- output (note that only their ratio is relevant).
-fixLine :: String -> String
-fixLine s = if 94*length s >= 100*length s' then s' else s
-  where s' = (unwords . words) s
-
 -- Perform the word wrap and justification; this function is
 -- intended to be called  after  any preprocessing functions have
 -- e.g. removed spaces or comment prefixes.
 fmtPara :: FMT
 fmtPara n = unlines . map justify' . wrapPara n . words
-  where justify' = fixLine . justify n
+  where
+    justify' = fixLine . justify n
+    -- This function will take a  single  line  and will check to
+    -- see if there are an "excessive" number of spaces in it
+    -- (due to application of the "justify" function) and, if so,
+    -- will reduce it to one space  per  word. This is to prevent
+    -- lines from appearing where  the  words  are too spread out
+    -- and there are too many  spaces.  The two weighting numbers
+    -- used in the length comparison  were chosen since they seem
+    -- to produce reasonable-looking output (note that only their
+    -- ratio is relevant).
+    fixLine :: String -> String
+    fixLine s = if 94*length s >= 100*length s' then s' else s
+    --fixLine s = if 85*length s >= 100*length s' then s' else s
+      where s' = (unwords . words) s
 
 -- ==============================================================
 --                       Formatting wrappers
@@ -104,18 +104,11 @@ fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
 -- after. Also, the target column  number given to the formatting
 -- function is decreased by the length of the comment prefix.
 fmtCommonPrefix :: FMT -> FMT
-fmtCommonPrefix f n s = byLine strip . noPrefix (f (n-size-1)) $ s
+fmtCommonPrefix f n s = byLine (strip . ((prefix++" ")++))
+                      . f (n-size-1)  . byLine (drop size) $ s
   where
-    prefix     = (findPrefix . commonPrefixAll . lines) s
-    newPrefix  = prefix ++ " "
-    size       = length prefix
-    noPrefix :: (String -> String) -> String -> String
-    noPrefix f = byLine (newPrefix++) . f . byLine (drop size)
-    -- Helper function; it will take  a  single string and see if
-    -- it begins with any  prefixes  that  are known to represent
-    -- code comments. If so it  will return that prefix otherwise
-    -- empty string.
-    findPrefix :: String -> String
+    prefix       = (findPrefix . commonPrefixAll . lines) s
+    size         = length prefix
     findPrefix s = fromMaybe "" . find (s`startsWith`) $ comments
 
 -- Apply the given formatting  function  to  each paragraph, then
