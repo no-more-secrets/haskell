@@ -18,6 +18,7 @@ module Utils ( ascListByValue
              , onWords
              , remove
              , sortPair
+             , splits
              , startsWith
              , strip
              , uncurry3
@@ -28,7 +29,7 @@ module Utils ( ascListByValue
              , zipWithWhile
              ) where
 
-import Data.List     (groupBy, unfoldr, isPrefixOf)
+import Data.List     (groupBy, unfoldr, isPrefixOf, inits, tails)
 import Data.Function (on)
 
 version :: Int
@@ -83,6 +84,18 @@ ascListByValue = undefined
 
 groupByKey :: (Eq b) => (a -> b) -> [a] -> [(b, [a])]
 groupByKey f = ascListByValue (f . head) . groupBy (equating f)
+
+-- This will return a list  of  all  possible pairs of lists such
+-- that the concatenation of the two lists yields the input list:
+--
+-- splits [1,2] = [([],[1,2]),([1],[2]),([1,2],[])] 
+-- splits []    = [([],[])]
+--
+-- This should be lazy in that  it  can be applied to an infinite
+-- list and the first  component  of  the  result  tuples will be
+-- accessible (and finite).
+splits :: [a] -> [([a], [a])]
+splits s = zipWith (,) (inits s) (tails s)
 
 keep :: (a -> Bool) -> [a] -> [a]
 keep = filter

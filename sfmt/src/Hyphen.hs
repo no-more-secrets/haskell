@@ -1,9 +1,9 @@
-module Hyphen where
+module Hyphen (hyphenations) where
 
-import Data.List  (inits, tails, intersect)
 import Data.Maybe (fromMaybe)
+import Rules      (canHyphenate, exempt)
 import Safe       (lastMay, headMay)
-import Utils      (keep)
+import Utils      (keep, splits)
 
 dehyphenate :: [String] -> [String]
 dehyphenate = undefined
@@ -13,15 +13,6 @@ dehyphenate = undefined
 --    | otherwise      = x:dyhyphenate (y:rest)
 --dehyphenate xs       = xs
 
--- Test laziness and move into Utils
-splits :: [a] -> [([a], [a])]
-splits s = zipWith (,) (inits s) (tails s)
-
--- Empty string is not exempt
-exempt :: String -> Bool
-exempt s = not . null $ s`intersect`noHyp
-  where noHyp = "/\\0123456789()[]{}!@#$%^&*=_><'`"
-
 validSplit :: (String, String) -> Bool
 validSplit (xs, ys)
     | null xs || null ys   = True
@@ -30,17 +21,7 @@ validSplit (xs, ys)
     | otherwise            = fromMaybe err test
       where
         err = error "something went wrong..."
-        test = canSplit <$> lastMay xs <*> headMay ys
-
-        canSplit :: Char -> Char -> Bool
-        canSplit x y
-            | y`elem`punct                   = False
-            | (not . isVowel) x && isVowel y = True
-            | otherwise                      = False
-          where
-            isVowel = (`elem`vowels)
-            vowels  = "aeiouyAEIOUY"
-            punct   = "!.?"
+        test = canHyphenate <$> lastMay xs <*> headMay ys
 
 addHyphen :: (String, String) -> (String, String)
 addHyphen ("", xs) = ("", xs)
