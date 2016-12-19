@@ -8,7 +8,7 @@ import Data.List       (sort, group, find, intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe      (fromMaybe)
 import Safe            (headDef, headNote)
-import Hyphen          (hyphenations)
+import Hyphen          (hyphenations, dehyphenate)
 import Utils           (commonPrefixAll, unfoldrList, merge
                        ,byLine, strip, startsWith, remove)
 
@@ -58,7 +58,7 @@ wrapOne n = atLeast1 . worker n
 -- line will of course be longer than the target number of colum-
 -- ns.
 wrapPara :: Int -> [String] -> [[String]]
-wrapPara n = unfoldrList (wrapOne n)
+wrapPara n = unfoldrList (wrapOne n) . dehyphenate
 
 -- Basically like "unwords" except  it  takes  an  integer and it
 -- will ensure that the  returned  string  contains enough spaces
@@ -72,10 +72,10 @@ justify w xs = concat . merge xs  . map (spaces . length) . group
     spaces :: Int -> String
     spaces n = replicate n ' '
     -- Generate an infinite sequence of indices which are to rep-
-    -- resent the positions of  "slots"  between  words. The seq-
-    -- uence of indices in the returned list determines the order
-    -- in which individual space characters are distributed among
-    -- slots when justifying a line.
+    -- resent the positions  of  "slots"  between  words. The se-
+    -- quence of indices in the  returned list determines the or-
+    -- der in which individual  space  characters are distributed
+    -- among slots when justifying a line.
     distribute :: Int -> [Int]
     distribute n
         | n <= 0    = []
@@ -106,10 +106,10 @@ fmtPara n = unlines . map justify' . wrapPara n . words
 -- ==============================================================
 -- Function will look at  the  number  of  leading  spaces on the
 -- first line and record it. Then, it will strip all leading spa-
--- ces from all lines,  apply  the  formatting function with red-
--- uced number of columns, then will  re-attach a fixed number of
--- spaces (the amount found on the first line) to all lines, eff-
--- ectively making them line up.
+-- ces from all lines, apply the formatting function with reduced
+-- number of columns, then will re-attach  a fixed number of spa-
+-- ces (the amount found on the first line) to all lines, effect-
+-- ively making them line up.
 fmtLeadingSpace :: FMT -> FMT
 fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
   where prefix     = takeWhile (' '==) $ xs

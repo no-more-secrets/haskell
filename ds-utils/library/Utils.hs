@@ -4,6 +4,7 @@ module Utils ( ascListByValue
              , commonPrefix
              , commonPrefixAll
              , compareWith
+             , endsWith
              , enumerate
              , enumerate1
              , equating
@@ -29,7 +30,8 @@ module Utils ( ascListByValue
              , zipWithWhile
              ) where
 
-import Data.List     (groupBy, unfoldr, isPrefixOf, inits, tails)
+import Data.List     (groupBy, unfoldr, isPrefixOf, inits, tails
+                     ,isSuffixOf)
 import Data.Function (on)
 
 version :: Int
@@ -37,6 +39,9 @@ version = 1
 
 startsWith :: (Eq a) => [a] -> [a] -> Bool
 startsWith x y = y`isPrefixOf`x
+
+endsWith :: (Eq a) => [a] -> [a] -> Bool
+endsWith x y = y`isSuffixOf`x
 
 commonPrefix :: (Eq a) => [a] -> [a] -> [a]
 commonPrefix x = map fst . takeWhile (uncurry (==)) . zip x

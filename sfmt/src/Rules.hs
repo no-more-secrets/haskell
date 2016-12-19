@@ -57,7 +57,7 @@ rules = M.fromAscList
      ("hw",True ),("hx",True ),("hy",True ),("hz",True ),("ia",True ),("ib",True ),
      ("ic",True ),("id",True ),("ie",False),("if",True ),("ig",False),("ih",True ),
      ("ii",True ),("ij",True ),("ik",True ),("il",True ),("im",True ),("in",False),
-     ("io",False),("ip",True ),("iq",True ),("ir",True ),("is",True ),("it",True ),
+     ("io",False),("ip",True ),("iq",True ),("ir",False),("is",True ),("it",True ),
      ("iu",True ),("iv",True ),("iw",True ),("ix",True ),("iy",True ),("iz",True ),
      ("ja",True ),("jb",True ),("jc",True ),("jd",True ),("je",True ),("jf",True ),
      ("jg",True ),("jh",True ),("ji",True ),("jj",False),("jk",True ),("jl",True ),

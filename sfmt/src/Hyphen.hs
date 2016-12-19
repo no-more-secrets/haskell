@@ -1,22 +1,23 @@
-module Hyphen (hyphenations) where
+module Hyphen (hyphenations, dehyphenate) where
 
 import Data.Maybe (fromMaybe)
 import Rules      (canHyphenate, exempt)
 import Safe       (lastMay, headMay)
-import Utils      (keep, splits)
+import Utils      (keep, splits, endsWith)
 
+-- We can't do this with a  simple  map operation because we need
+-- to join adjacent words after removing a hyphen.
 dehyphenate :: [String] -> [String]
-dehyphenate = undefined
---dehyphenate (x:y:rest)
---    | x == "-"       = x:dyhyphenate (y:rest)
---    | x`endsWith`"-" = dehyphenate $ (init x++y):rest
---    | otherwise      = x:dyhyphenate (y:rest)
---dehyphenate xs       = xs
+dehyphenate (x:y:rest)
+    | x == "-"       = x:dehyphenate (y:rest)
+    | x`endsWith`"-" = dehyphenate $ (init x++y):rest
+    | otherwise      = x:dehyphenate (y:rest)
+dehyphenate xs       = xs
 
 validSplit :: (String, String) -> Bool
 validSplit (xs, ys)
     | null xs || null ys   = True
-    | length xs`elem`[1,2] = False
+    | length xs`elem`[1]   = False
     | length ys`elem`[1,2] = False
     | otherwise            = fromMaybe err test
       where
