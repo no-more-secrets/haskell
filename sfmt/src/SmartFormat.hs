@@ -21,8 +21,8 @@ import Utils           (commonPrefixAll, unfoldrList, merge
 -- way.
 type FMT = Int -> String -> String
 
--- These are specially recognized line prefixes that will be
--- preserved at the beginning of the lines during formatting.
+-- These are specially recognized line prefixes that will be pre-
+-- served at the beginning of the lines during formatting.
 comments :: [String]
 comments = ["--", "#", "*", "//"]
 
@@ -53,14 +53,14 @@ wrapOne n = atLeast1 . worker n
 
 -- Take number of columns and  input string representing a docum-
 -- ent and reformats the text so  that it fits within the specif-
--- ied number of columns. If a given word is longer than the
--- target column size then it will  be  put  on its own line, and
--- this line will of course be  longer  than the target number of
--- columns.
+-- ied number of columns. If a given word is longer than the tar-
+-- get column size then it will be  put on its own line, and this
+-- line will of course be longer than the target number of colum-
+-- ns.
 wrapPara :: Int -> [String] -> [[String]]
 wrapPara n = unfoldrList (wrapOne n)
 
--- Basically like "unwords" except it takes an integer and it
+-- Basically like "unwords" except  it  takes  an  integer and it
 -- will ensure that the  returned  string  contains enough spaces
 -- between words so as to  span  a  length equal to that integer.
 -- Exceptions to that are if a  line contains only a single word.
@@ -71,8 +71,8 @@ justify w xs = concat . merge xs  . map (spaces . length) . group
     need = w - length (concat xs)
     spaces :: Int -> String
     spaces n = replicate n ' '
-    -- Generate an infinite sequence of indices which are to
-    -- represent the positions of "slots" between words. The seq-
+    -- Generate an infinite sequence of indices which are to rep-
+    -- resent the positions of  "slots"  between  words. The seq-
     -- uence of indices in the returned list determines the order
     -- in which individual space characters are distributed among
     -- slots when justifying a line.
@@ -89,7 +89,7 @@ fmtPara n = unlines . map justify' . wrapPara n . words
   where
     justify' = fixLine . justify n
     -- This function will take a  single  line  and will check to
-    -- see if there are an "excessive" number of spaces in it
+    -- see if there are  an  "excessive"  number  of spaces in it
     -- (due to application of the "justify" function) and, if so,
     -- will reduce it to one space  per  word. This is to prevent
     -- lines from appearing where  the  words  are too spread out
@@ -98,18 +98,15 @@ fmtPara n = unlines . map justify' . wrapPara n . words
     -- to produce reasonable-looking output (note that only their
     -- ratio is relevant).
     fixLine :: String -> String
-    --fixLine s = if 60*length s >= 100*length s' then s' else s
-    --fixLine s = if 94*length s >= 100*length s' then s' else s
-    --fixLine s = if 85*length s >= 100*length s' then s' else s
-    fixLine s = if 80*length s >= 100*length s' then s' else s
+    fixLine s = if 89*length s >= 100*length s' then s' else s
       where s' = (unwords . words) s
 
 -- ==============================================================
 --                       Formatting wrappers
 -- ==============================================================
--- Function will look at the number of leading spaces on the
--- first line and record it. Then, it will strip all leading
--- spaces from all lines, apply the formatting function with red-
+-- Function will look at  the  number  of  leading  spaces on the
+-- first line and record it. Then, it will strip all leading spa-
+-- ces from all lines,  apply  the  formatting function with red-
 -- uced number of columns, then will  re-attach a fixed number of
 -- spaces (the amount found on the first line) to all lines, eff-
 -- ectively making them line up.
@@ -123,7 +120,7 @@ fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
 -- prefix; if so, this prefix will  be  stripped off of each line
 -- before applying the formatting  function,  and then re-applied
 -- after. Also, the target column  number given to the formatting
--- function is decreased by the length of the comment prefix.
+-- function is decreased by  the  length  of  the comment prefix.
 fmtCommonPrefix :: FMT -> FMT
 fmtCommonPrefix f n s = byLine (strip . (newPrefix++))
                       . f (n-newSize)
@@ -145,5 +142,12 @@ fmtMultiPara f n = intercalate "\n" . map (f n) . map unlines
 -- ==============================================================
 --                            Driver
 -- ==============================================================
+-- We need two fmtMultiPara's  because  we  may of comments split
+-- into paragraphs both outside  of  the  common prefix or inside
+-- it.
 go :: FMT
-go = fmtMultiPara $ fmtLeadingSpace $ fmtCommonPrefix $ fmtPara
+go = fmtMultiPara
+   $ fmtLeadingSpace
+   $ fmtCommonPrefix
+   $ fmtMultiPara
+   $ fmtPara
