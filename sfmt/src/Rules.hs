@@ -37,7 +37,7 @@ rules = M.fromAscList
      ("dg",True ),("dh",True ),("di",True ),("dj",True ),("dk",True ),("dl",True ),
      ("dm",True ),("dn",True ),("do",True ),("dp",True ),("dq",True ),("dr",True ),
      ("ds",True ),("dt",True ),("du",True ),("dv",True ),("dw",True ),("dx",True ),
-     ("dy",True ),("dz",True ),("ea",False),("eb",True ),("ec",False),("ed",True ),
+     ("dy",True ),("dz",True ),("ea",False),("eb",True ),("ec",False),("ed",False),
      ("ee",False),("ef",True ),("eg",True ),("eh",True ),("ei",False),("ej",True ),
      ("ek",True ),("el",True ),("em",True ),("en",False),("eo",True ),("ep",True ),
      ("eq",True ),("er",True ),("es",True ),("et",True ),("eu",False),("ev",True ),

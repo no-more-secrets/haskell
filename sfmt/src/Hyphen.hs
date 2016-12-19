@@ -1,5 +1,6 @@
 module Hyphen (hyphenations, dehyphenate) where
 
+import Data.List  ((\\))
 import Data.Maybe (fromMaybe)
 import Rules      (canHyphenate, exempt)
 import Safe       (lastMay, headMay)
@@ -16,13 +17,15 @@ dehyphenate xs       = xs
 
 validSplit :: (String, String) -> Bool
 validSplit (xs, ys)
-    | null xs || null ys   = True
-    | length xs`elem`[1]   = False
-    | length ys`elem`[1,2] = False
-    | otherwise            = fromMaybe err test
+    | null xs || null ys    = True
+    | length xs'`elem`[1]   = False
+    | length ys'`elem`[1,2] = False
+    | otherwise             = fromMaybe err test
       where
-        err = error "something went wrong..."
-        test = canHyphenate <$> lastMay xs <*> headMay ys
+        err        = error "something went wrong..."
+        test       = canHyphenate <$> lastMay xs <*> headMay ys
+        punct      = ".!?,'\":;"
+        (xs', ys') = (xs \\ punct, ys \\ punct)
 
 addHyphen :: (String, String) -> (String, String)
 addHyphen ("", xs) = ("", xs)
