@@ -146,4 +146,4 @@ fmtMultiPara f n = intercalate "\n" . map (f n) . map unlines
 --                            Driver
 -- ==============================================================
 go :: FMT
-go = fmtLeadingSpace $ fmtCommonPrefix $ fmtMultiPara $ fmtPara
+go = fmtMultiPara $ fmtLeadingSpace $ fmtCommonPrefix $ fmtPara

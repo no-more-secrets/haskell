@@ -1,5 +1,6 @@
 module Rules (canHyphenate, exempt) where
 
+import           Data.Char            (toLower)
 import           Data.List            (intersect)
 import           Data.Map.Strict      (Map)
 import qualified Data.Map.Strict as M (lookup, fromAscList)
@@ -11,7 +12,8 @@ exempt s = not . null $ s`intersect`noHyp
   where noHyp = "/\\0123456789()[]{}!@#$%^&*=_><'`"
 
 canHyphenate :: Char -> Char -> Bool
-canHyphenate c1 c2 = fromMaybe False $ M.lookup (c1:c2:[]) rules
+canHyphenate c1 c2 = fromMaybe False $ M.lookup toLook rules
+  where toLook = (toLower c1:toLower c2:[])
 
 -- fromAscList: O(n). Build a map from  an ascending list in lin-
 -- ear time. The precondition  (input  list  is ascending) is not
@@ -22,7 +24,7 @@ rules = M.fromAscList
      ("ag",True ),("ah",False),("ai",False),("aj",True ),("ak",True ),("al",True ),
      ("am",True ),("an",True ),("ao",False),("ap",True ),("aq",True ),("ar",True ),
      ("as",True ),("at",True ),("au",False),("av",True ),("aw",True ),("ax",True ),
-     ("ay",False),("az",True ),("ba",True ),("bb",False),("bc",False),("bd",True ),
+     ("ay",False),("az",True ),("ba",True ),("bb",False),("bc",True ),("bd",True ),
      ("be",True ),("bf",True ),("bg",True ),("bh",True ),("bi",True ),("bj",True ),
      ("bk",True ),("bl",True ),("bm",True ),("bn",True ),("bo",True ),("bp",True ),
      ("bq",True ),("br",True ),("bs",True ),("bt",True ),("bu",True ),("bv",True ),
@@ -35,27 +37,27 @@ rules = M.fromAscList
      ("dg",True ),("dh",True ),("di",True ),("dj",True ),("dk",True ),("dl",True ),
      ("dm",True ),("dn",True ),("do",True ),("dp",True ),("dq",True ),("dr",True ),
      ("ds",True ),("dt",True ),("du",True ),("dv",True ),("dw",True ),("dx",True ),
-     ("dy",True ),("dz",True ),("ea",False),("eb",True ),("ec",True ),("ed",True ),
+     ("dy",True ),("dz",True ),("ea",False),("eb",True ),("ec",False),("ed",True ),
      ("ee",False),("ef",True ),("eg",True ),("eh",True ),("ei",False),("ej",True ),
-     ("ek",True ),("el",True ),("em",True ),("en",True ),("eo",True ),("ep",True ),
+     ("ek",True ),("el",True ),("em",True ),("en",False),("eo",True ),("ep",True ),
      ("eq",True ),("er",True ),("es",True ),("et",True ),("eu",False),("ev",True ),
      ("ew",True ),("ex",False),("ey",False),("ez",True ),("fa",True ),("fb",True ),
      ("fc",True ),("fd",True ),("fe",True ),("ff",False),("fg",True ),("fh",True ),
      ("fi",True ),("fj",True ),("fk",True ),("fl",True ),("fm",True ),("fn",True ),
-     ("fo",True ),("fp",True ),("fq",True ),("fr",True ),("fs",True ),("ft",True ),
+     ("fo",True ),("fp",True ),("fq",True ),("fr",True ),("fs",True ),("ft",False),
      ("fu",True ),("fv",True ),("fw",True ),("fx",True ),("fy",True ),("fz",True ),
      ("ga",True ),("gb",True ),("gc",True ),("gd",True ),("ge",True ),("gf",True ),
-     ("gg",False),("gh",True ),("gi",True ),("gj",True ),("gk",True ),("gl",True ),
+     ("gg",False),("gh",False),("gi",True ),("gj",True ),("gk",True ),("gl",True ),
      ("gm",True ),("gn",True ),("go",True ),("gp",True ),("gq",True ),("gr",True ),
      ("gs",True ),("gt",True ),("gu",True ),("gv",True ),("gw",True ),("gx",True ),
      ("gy",True ),("gz",True ),("ha",True ),("hb",True ),("hc",True ),("hd",True ),
      ("he",True ),("hf",True ),("hg",True ),("hh",True ),("hi",True ),("hj",True ),
      ("hk",True ),("hl",True ),("hm",True ),("hn",True ),("ho",True ),("hp",True ),
-     ("hq",True ),("hr",True ),("hs",True ),("ht",True ),("hu",True ),("hv",True ),
+     ("hq",True ),("hr",True ),("hs",True ),("ht",False),("hu",True ),("hv",True ),
      ("hw",True ),("hx",True ),("hy",True ),("hz",True ),("ia",True ),("ib",True ),
-     ("ic",True ),("id",True ),("ie",False),("if",True ),("ig",True ),("ih",True ),
-     ("ii",True ),("ij",True ),("ik",True ),("il",True ),("im",True ),("in",True ),
-     ("io",True ),("ip",True ),("iq",True ),("ir",True ),("is",True ),("it",True ),
+     ("ic",True ),("id",True ),("ie",False),("if",True ),("ig",False),("ih",True ),
+     ("ii",True ),("ij",True ),("ik",True ),("il",True ),("im",True ),("in",False),
+     ("io",False),("ip",True ),("iq",True ),("ir",True ),("is",True ),("it",True ),
      ("iu",True ),("iv",True ),("iw",True ),("ix",True ),("iy",True ),("iz",True ),
      ("ja",True ),("jb",True ),("jc",True ),("jd",True ),("je",True ),("jf",True ),
      ("jg",True ),("jh",True ),("ji",True ),("jj",False),("jk",True ),("jl",True ),
@@ -80,7 +82,7 @@ rules = M.fromAscList
      ("nq",True ),("nr",True ),("ns",True ),("nt",False),("nu",True ),("nv",True ),
      ("nw",True ),("nx",True ),("ny",True ),("nz",True ),("oa",True ),("ob",True ),
      ("oc",True ),("od",True ),("oe",True ),("of",True ),("og",True ),("oh",True ),
-     ("oi",False),("oj",True ),("ok",True ),("ol",True ),("om",True ),("on",True ),
+     ("oi",False),("oj",True ),("ok",True ),("ol",True ),("om",True ),("on",False),
      ("oo",False),("op",True ),("oq",True ),("or",True ),("os",True ),("ot",True ),
      ("ou",False),("ov",True ),("ow",True ),("ox",True ),("oy",True ),("oz",True ),
      ("pa",True ),("pb",True ),("pc",True ),("pd",True ),("pe",True ),("pf",True ),
@@ -93,7 +95,7 @@ rules = M.fromAscList
      ("qq",False),("qr",True ),("qs",True ),("qt",True ),("qu",False),("qv",True ),
      ("qw",True ),("qx",True ),("qy",True ),("qz",True ),("ra",True ),("rb",True ),
      ("rc",True ),("rd",True ),("re",True ),("rf",True ),("rg",True ),("rh",False),
-     ("ri",True ),("rj",True ),("rk",True ),("rl",True ),("rm",True ),("rn",True ),
+     ("ri",False),("rj",True ),("rk",True ),("rl",True ),("rm",True ),("rn",True ),
      ("ro",True ),("rp",True ),("rq",True ),("rr",False),("rs",True ),("rt",True ),
      ("ru",True ),("rv",True ),("rw",True ),("rx",True ),("ry",True ),("rz",True ),
      ("sa",True ),("sb",True ),("sc",False),("sd",True ),("se",True ),("sf",True ),
@@ -106,8 +108,8 @@ rules = M.fromAscList
      ("tq",True ),("tr",True ),("ts",True ),("tt",False),("tu",True ),("tv",True ),
      ("tw",True ),("tx",True ),("ty",True ),("tz",True ),("ua",True ),("ub",True ),
      ("uc",True ),("ud",True ),("ue",False),("uf",True ),("ug",True ),("uh",False),
-     ("ui",False),("uj",True ),("uk",True ),("ul",True ),("um",True ),("un",True ),
-     ("uo",True ),("up",True ),("uq",True ),("ur",True ),("us",True ),("ut",True ),
+     ("ui",False),("uj",True ),("uk",True ),("ul",True ),("um",True ),("un",False),
+     ("uo",True ),("up",True ),("uq",True ),("ur",False),("us",True ),("ut",True ),
      ("uu",False),("uv",True ),("uw",True ),("ux",True ),("uy",True ),("uz",True ),
      ("va",True ),("vb",True ),("vc",True ),("vd",True ),("ve",True ),("vf",True ),
      ("vg",True ),("vh",True ),("vi",True ),("vj",True ),("vk",True ),("vl",True ),
