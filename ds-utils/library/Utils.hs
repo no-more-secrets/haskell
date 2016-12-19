@@ -70,6 +70,9 @@ fAnd f g x = (f x) && (g x)
 mapFst :: (a -> c) -> [(a, b)] -> [(c, b)]
 mapFst f = map $ \(x,y) -> (f x, y)
 
+mapSnd :: (b -> c) -> [(a, b)] -> [(a, c)]
+mapSnd f = map $ \(x,y) -> (x, f y)
+
 -- This is safe since if the list is empty the "head" function
 -- will not be called
 uniform :: (Eq a) => [a] -> Bool

@@ -7,8 +7,10 @@ module SmartFormat (go) where
 import Data.List       (sort, group, find, intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe      (fromMaybe)
+import Safe            (headDef, headNote)
+import Hyphen          (hyphenations)
 import Utils           (commonPrefixAll, unfoldrList, merge
-                       ,byLine, strip, startsWith)
+                       ,byLine, strip, startsWith, remove)
 
 -- ==============================================================
 --                      Configuration stuff
@@ -27,44 +29,61 @@ comments = ["--", "#", "*", "//"]
 -- ==============================================================
 --           Basic wrapping / justification algorithms
 -- ==============================================================
--- Take number of columns and input string representing a
--- document and reformats the text so that it fits within the
--- specified number of columns. If  a  given  word is longer than
--- the target column size then it  will  be  put on its own line,
--- and this line will of course  be longer than the target number
--- of columns.
-wrapPara :: Int -> [String] -> [[String]]
-wrapPara n = unfoldrList (splitAt =<< (max 1 . longest n))
+hyphenate :: Int -> String -> (String, String)
+hyphenate n = head . dropWhile tooLong . reverse . hyphenations
+  where tooLong (x,_) = length x > n
+
+wrapOne :: Int -> [String] -> ([String], [String])
+wrapOne n = atLeast1 . worker n
   where
-    -- Maximum number of words that can  fit in width n (possibly
-    -- none). By "fit" it is meant to include the spaces that
-    -- would be inserted between words if they were to be joined.
-    longest :: Int -> [String] -> Int
-    longest n = length     . takeWhile (<=n) . zipWith (+) [0..]
-              . scanl1 (+) . map length
+    atLeast1 ([],ws) = ([head ws], tail ws)
+    atLeast1 zs      = zs
+
+    -- Recursive worker
+    worker :: Int -> [String] -> ([String], [String])
+    worker _ []         = ([], [])
+    worker n (x:xs)
+        | n <= 0        = ([], x:xs)
+        | length x <= n = (x:left, right)
+        | otherwise     = (purge [part1], purge $ part2:xs)
+      where
+        (left,  right)  = worker (n-length x-1) xs
+        (part1, part2)  = hyphenate n x
+        purge           = remove null
+
+-- Take number of columns and  input string representing a docum-
+-- ent and reformats the text so  that it fits within the specif-
+-- ied number of columns. If a given word is longer than the
+-- target column size then it will  be  put  on its own line, and
+-- this line will of course be  longer  than the target number of
+-- columns.
+wrapPara :: Int -> [String] -> [[String]]
+wrapPara n = unfoldrList (wrapOne n)
 
 -- Basically like "unwords" except it takes an integer and it
 -- will ensure that the  returned  string  contains enough spaces
 -- between words so as to  span  a  length equal to that integer.
 -- Exceptions to that are if a  line contains only a single word.
 justify :: Int -> [String] -> String
-justify w xs = concat . merge xs . map ((`replicate`' ') . length)
-             . group . sort . take need . distribute $ length xs-1
+justify w xs = concat . merge xs  . map (spaces . length) . group
+             . sort   . take need . distribute $ length xs-1
   where
     need = w - length (concat xs)
+    spaces :: Int -> String
+    spaces n = replicate n ' '
     -- Generate an infinite sequence of indices which are to
-    -- represent the positions of "slots" between words. The
-    -- sequence of indices in  the  returned  list determines the
-    -- order in which individual space characters are distributed
-    -- among slots when justifying a line.
+    -- represent the positions of "slots" between words. The seq-
+    -- uence of indices in the returned list determines the order
+    -- in which individual space characters are distributed among
+    -- slots when justifying a line.
     distribute :: Int -> [Int]
     distribute n
         | n <= 0    = []
         | otherwise = cycle $ [0..n-1]`merge`reverse [0..n-1]
 
--- Perform the word wrap and justification; this function is
--- intended to be called  after  any preprocessing functions have
--- e.g. removed spaces or comment prefixes.
+-- Perform the word wrap and justification; this function is int-
+-- ended to be called after any preprocessing functions have e.g.
+-- removed spaces or comment prefixes.
 fmtPara :: FMT
 fmtPara n = unlines . map justify' . wrapPara n . words
   where
@@ -79,8 +98,10 @@ fmtPara n = unlines . map justify' . wrapPara n . words
     -- to produce reasonable-looking output (note that only their
     -- ratio is relevant).
     fixLine :: String -> String
-    fixLine s = if 94*length s >= 100*length s' then s' else s
+    --fixLine s = if 60*length s >= 100*length s' then s' else s
+    --fixLine s = if 94*length s >= 100*length s' then s' else s
     --fixLine s = if 85*length s >= 100*length s' then s' else s
+    fixLine s = if 80*length s >= 100*length s' then s' else s
       where s' = (unwords . words) s
 
 -- ==============================================================
@@ -88,10 +109,10 @@ fmtPara n = unlines . map justify' . wrapPara n . words
 -- ==============================================================
 -- Function will look at the number of leading spaces on the
 -- first line and record it. Then, it will strip all leading
--- spaces from all lines, apply the formatting function with
--- reduced number of columns, then  will re-attach a fixed number
--- of spaces (the amount found on  the  first line) to all lines,
--- effectively making them line up.
+-- spaces from all lines, apply the formatting function with red-
+-- uced number of columns, then will  re-attach a fixed number of
+-- spaces (the amount found on the first line) to all lines, eff-
+-- ectively making them line up.
 fmtLeadingSpace :: FMT -> FMT
 fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
   where prefix     = takeWhile (' '==) $ xs
@@ -104,11 +125,15 @@ fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
 -- after. Also, the target column  number given to the formatting
 -- function is decreased by the length of the comment prefix.
 fmtCommonPrefix :: FMT -> FMT
-fmtCommonPrefix f n s = byLine (strip . ((prefix++" ")++))
-                      . f (n-size-1)  . byLine (drop size) $ s
+fmtCommonPrefix f n s = byLine (strip . (newPrefix++))
+                      . f (n-newSize)
+                      . byLine (drop size)
+                      $ s
   where
     prefix       = (findPrefix . commonPrefixAll . lines) s
+    newPrefix    = if null prefix then prefix else (prefix++" ")
     size         = length prefix
+    newSize      = length newPrefix
     findPrefix s = fromMaybe "" . find (s`startsWith`) $ comments
 
 -- Apply the given formatting  function  to  each paragraph, then
