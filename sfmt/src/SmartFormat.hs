@@ -7,7 +7,6 @@ module SmartFormat (go) where
 import Data.List       (sort, group, find, intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe      (fromMaybe)
-import Safe            (headDef, headNote)
 import Hyphen          (hyphenations, dehyphenate)
 import Utils           (commonPrefixAll, unfoldrList, merge
                        ,byLine, strip, startsWith, remove)
@@ -29,10 +28,6 @@ comments = ["--", "#", "*", "//"]
 -- ==============================================================
 --           Basic wrapping / justification algorithms
 -- ==============================================================
-hyphenate :: Int -> String -> (String, String)
-hyphenate n = head . dropWhile tooLong . reverse . hyphenations
-  where tooLong (x,_) = length x > n
-
 wrapOne :: Int -> [String] -> ([String], [String])
 wrapOne n = atLeast1 . worker n
   where
@@ -48,15 +43,19 @@ wrapOne n = atLeast1 . worker n
         | otherwise     = (purge [part1], purge $ part2:xs)
       where
         (left,  right)  = worker (n-length x-1) xs
-        (part1, part2)  = hyphenate n x
+        (part1, part2)  = hyphen n x
         purge           = remove null
 
--- Take number of columns and  input string representing a docum-
--- ent and reformats the text so  that it fits within the specif-
--- ied number of columns. If a given word is longer than the tar-
--- get column size then it will be  put on its own line, and this
--- line will of course be longer than the target number of colum-
--- ns.
+    hyphen :: Int -> String -> (String, String)
+    hyphen n = head . dropWhile tooLong . reverse . hyphenations
+      where tooLong (x,_) = length x > n
+
+-- Take number of columns and  input  string representing a docu-
+-- ment and reformats the text so  that it fits within the speci-
+-- fied number of columns. If  a  given  word  is longer than the
+-- target column size then it will  be  put  on its own line, and
+-- this line will of course be  longer  than the target number of
+-- columns.
 wrapPara :: Int -> [String] -> [[String]]
 wrapPara n = unfoldrList (wrapOne n) . dehyphenate
 
@@ -73,17 +72,17 @@ justify w xs = concat . merge xs  . map (spaces . length) . group
     spaces n = replicate n ' '
     -- Generate an infinite sequence of indices which are to rep-
     -- resent the positions  of  "slots"  between  words. The se-
-    -- quence of indices in the  returned list determines the or-
-    -- der in which individual  space  characters are distributed
+    -- quence of indices  in  the  returned  list  determines the
+    -- order in which individual space characters are distributed
     -- among slots when justifying a line.
     distribute :: Int -> [Int]
     distribute n
         | n <= 0    = []
         | otherwise = cycle $ [0..n-1]`merge`reverse [0..n-1]
 
--- Perform the word wrap and justification; this function is int-
--- ended to be called after any preprocessing functions have e.g.
--- removed spaces or comment prefixes.
+-- Perform the word wrap and  justification; this function is in-
+-- tended to be  called  after  any  preprocessing functions have
+-- e.g. removed spaces or comment prefixes.
 fmtPara :: FMT
 fmtPara n = unlines . map justify' . wrapPara n . words
   where
@@ -105,11 +104,11 @@ fmtPara n = unlines . map justify' . wrapPara n . words
 --                       Formatting wrappers
 -- ==============================================================
 -- Function will look at  the  number  of  leading  spaces on the
--- first line and record it. Then, it will strip all leading spa-
--- ces from all lines, apply the formatting function with reduced
--- number of columns, then will re-attach  a fixed number of spa-
--- ces (the amount found on the first line) to all lines, effect-
--- ively making them line up.
+-- first line and record  it.  Then,  it  will  strip all leading
+-- spaces from all lines, apply  the formatting function with re-
+-- duced number of columns, then will re-attach a fixed number of
+-- spaces (the amount found on the  first line) to all lines, ef-
+-- fectively making them line up.
 fmtLeadingSpace :: FMT -> FMT
 fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
   where prefix     = takeWhile (' '==) $ xs
