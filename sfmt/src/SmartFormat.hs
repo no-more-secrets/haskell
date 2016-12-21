@@ -2,14 +2,19 @@
 -- This module contains functionality for wrapping and justifying
 -- text, either normal text  or  certain  types of code comments.
 -- ==============================================================
-module SmartFormat (go) where
+module SmartFormat (go, Config(..)) where
 
 import Data.List       (sort, group, find, intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe      (fromMaybe)
 import Hyphen          (hyphenations, dehyphenate)
 import Utils           (commonPrefixAll, unfoldrList, merge
-                       ,byLine, strip, startsWith, remove)
+                       ,byLine, strip, startsWith, remove
+                       ,groupByKey, endsWith)
+
+data Config = Config { target   :: Int
+                     , comments :: [String]
+                     } deriving (Show)
 
 -- ==============================================================
 --                      Configuration stuff
@@ -18,12 +23,7 @@ import Utils           (commonPrefixAll, unfoldrList, merge
 -- function takes a target  column  width  and a multiline string
 -- and returns another multiline string formatted in a particular
 -- way.
-type FMT = Int -> String -> String
-
--- These are specially recognized line prefixes that will be pre-
--- served at the beginning of the lines during formatting.
-comments :: [String]
-comments = ["--", "#", "*", "//"]
+type FMT = Config -> String -> String
 
 -- ==============================================================
 --           Basic wrapping / justification algorithms
@@ -84,9 +84,10 @@ justify w xs = concat . merge xs  . map (spaces . length) . group
 -- tended to be  called  after  any  preprocessing functions have
 -- e.g. removed spaces or comment prefixes.
 fmtPara :: FMT
-fmtPara n = unlines . map justify' . wrapPara n . words
+fmtPara c = unlines . map justify' . wrapPara n . words
   where
     justify' = fixLine . justify n
+    n = target c
     -- This function will take a  single  line  and will check to
     -- see if there are  an  "excessive"  number  of spaces in it
     -- (due to application of the "justify" function) and, if so,
@@ -110,9 +111,10 @@ fmtPara n = unlines . map justify' . wrapPara n . words
 -- spaces (the amount found on the  first line) to all lines, ef-
 -- fectively making them line up.
 fmtLeadingSpace :: FMT -> FMT
-fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
+fmtLeadingSpace f c xs = noSpaces (f c') xs
   where prefix     = takeWhile (' '==) $ xs
         noSpaces f = byLine (prefix++) . f . byLine strip
+        c'         = Config (target c-length prefix) (comments c)
 
 -- Will apply the fiven formatting  function,  but first will see
 -- if the lines in the text  each begin with a known code-comment
@@ -121,22 +123,34 @@ fmtLeadingSpace f n xs = noSpaces (f (n-length prefix)) xs
 -- after. Also, the target column  number given to the formatting
 -- function is decreased by  the  length  of  the comment prefix.
 fmtCommonPrefix :: FMT -> FMT
-fmtCommonPrefix f n s = byLine (strip . (newPrefix++))
-                      . f (n-newSize)
-                      . byLine (drop size)
-                      $ s
-  where
-    prefix       = (findPrefix . commonPrefixAll . lines) s
-    newPrefix    = if null prefix then prefix else (prefix++" ")
+fmtCommonPrefix f c s = let
+    prefix       = fromMaybe "" . flip find (comments c)
+                 . startsWith . commonPrefixAll . lines $ s
     size         = length prefix
-    newSize      = length newPrefix
-    findPrefix s = fromMaybe "" . find (s`startsWith`) $ comments
+    prefix'      = if (null prefix || (prefix`endsWith`" ")) then
+                       prefix
+                   else
+                       prefix++" "
+    size'        = length prefix'
+    c'           = Config (target c-size') (comments c)
+ in byLine (strip . (prefix'++)) . f c' . byLine (drop size) $ s
 
 -- Apply the given formatting  function  to  each paragraph, then
 -- rejoin the paragraphs.
 fmtMultiPara :: FMT -> FMT
-fmtMultiPara f n = intercalate "\n" . map (f n) . map unlines
+fmtMultiPara f c = intercalate "\n" . map (f c) . map unlines
                  . splitOn [""]     . lines
+
+fmtCommentsOnly :: FMT -> FMT
+fmtCommentsOnly f c = concat . map process
+                    . groupByKey commentStart . lines
+  where
+    process :: (Maybe String, [String]) -> String
+    process (Nothing, ls) =     (unlines ls)
+    process (_, ls)       = f c (unlines ls)
+
+    commentStart :: String -> Maybe String
+    commentStart line = find (strip line`startsWith`) $ comments c
 
 -- ==============================================================
 --                            Driver
@@ -144,9 +158,16 @@ fmtMultiPara f n = intercalate "\n" . map (f n) . map unlines
 -- We need two fmtMultiPara's  because  we  may of comments split
 -- into paragraphs both outside  of  the  common prefix or inside
 -- it.
-go :: FMT
-go = fmtMultiPara
-   $ fmtLeadingSpace
-   $ fmtCommonPrefix
-   $ fmtMultiPara
-   $ fmtPara
+
+procedure = [fmtMultiPara
+            ,fmtLeadingSpace
+            ,fmtCommonPrefix
+            ,fmtMultiPara
+            ]
+
+go' :: FMT -> [FMT -> FMT] -> FMT
+go' = foldr ($)
+
+go :: Bool -> FMT
+go True  = go' fmtPara (fmtCommentsOnly:procedure)
+go False = go' fmtPara procedure

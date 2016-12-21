@@ -85,7 +85,7 @@ uniform :: (Eq a) => [a] -> Bool
 uniform x = all (==head x) x
 
 ascListByValue :: (a -> b) -> [a] -> [(b,a)]
-ascListByValue = undefined
+ascListByValue f xs = [(f x,x) | x <- xs]
 
 groupByKey :: (Eq b) => (a -> b) -> [a] -> [(b, [a])]
 groupByKey f = ascListByValue (f . head) . groupBy (equating f)
