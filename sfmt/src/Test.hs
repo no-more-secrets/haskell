@@ -2,11 +2,12 @@
 
 module Test (runTests) where
 
-import Debug.Trace (trace)
 import Hyphen
 import SmartFormat
 import Test.QuickCheck
 import Utils
+
+import qualified Debug.Trace as T (trace)
 
 -- ==============================================================
 -- Types for random generation
@@ -22,20 +23,12 @@ newtype TestText = TestText { getString :: String }
 -- Utilities
 -- ==============================================================
 
-trace_ :: (Show a) => String -> a -> a
-trace_ s x = trace (s ++ ": " ++ show x) x
-
-dropEdgeHyphens :: String -> String
-dropEdgeHyphens = reverse . dropWhile ('-'==)
-                . reverse . dropWhile ('-'==)
+trace :: (Show a) => String -> a -> a
+trace s x = T.trace (s ++ ": " ++ show x) x
 
 -- ==============================================================
 -- Tests for wrapPara
 -- ==============================================================
-
---                   ~~~~~~~~~~~~~~~~~~~~~
---                   Special Column values
---                   ~~~~~~~~~~~~~~~~~~~~~
 
 -- For non-empty input string but  zero  columns we should end up
 -- with precisely one word per line.
@@ -44,13 +37,20 @@ prop_zeroColumns (TestText "") = True
 prop_zeroColumns (TestText s)  = (lengths == [1])
   where lengths = nubNlnN $ map length $ wrapPara 0 $ words $ s
 
---                   ~~~~~~~~~~~~~~~~~~~~~
---                  Special TestText values
---                   ~~~~~~~~~~~~~~~~~~~~~
-
 -- If we word wrap nothing then we should get nothing.
 prop_emptyString :: Columns -> Bool
 prop_emptyString (Columns n) = (wrapPara n [] == [])
+
+-- If column number is  large  enough  to  hold  the entire input
+-- string then the word-wrapped output  should only have a single
+-- line (or no lines if input is empty).
+prop_singleLine :: TestText -> Bool
+prop_singleLine (TestText "") = True
+prop_singleLine (TestText s)  = (length wrapped == 1)
+  where
+    ws      = words s
+    columns = length $ unwords $ ws
+    wrapped = wrapPara columns $ ws
 
 -- In the case that all words have  length <= n then it should be
 -- the case that the result  of  word wrapping produces either no
@@ -65,10 +65,6 @@ prop_bounds (Columns n) (TestText s) = (null lengths || fits)
               $ remove tooLong $ words       $ s
     fits      = (maximum lengths <= n) &&
                 (minimum lengths >  0)
-
---                   ~~~~~~~~~~~~~~~~~~~~~
---                          General
---                   ~~~~~~~~~~~~~~~~~~~~~
 
 -- For a given number of columns n  it  must be the case that any
 -- resulting line which is longer than  n must have only one word
@@ -129,10 +125,6 @@ prop_greedyNoHyph (Columns n) (TestText s)
       -- this word on the previous line
       return $ endsWithHyphen || (remaining < (length x + 1))
 
---                   ~~~~~~~~~~~~~~~~~~~~~
---                        Hyphenation
---                   ~~~~~~~~~~~~~~~~~~~~~
-
 -- This is essentially prop_greedyNoHyph but  is a stronger check
 -- which also tries to hyphenate the  first word on the next line
 -- to try to fit it on  the  previous  line (and if that fit suc-
@@ -165,7 +157,7 @@ prop_greedy (Columns n) (TestText s)
 return []
 runTests = $quickCheckAll
 --runTests = $verboseCheckAll
---runTests = verboseCheck prop_greedyNoHyph
+--runTests = verboseCheck prop_singleLine
 
 -- ______________________________________________________________
 
@@ -184,6 +176,10 @@ genTextWord = do
     extra <- genTextChar
     let word' = if null word then [extra] else word'
     return (take len word)
+  where
+    dropEdgeHyphens :: String -> String
+    dropEdgeHyphens = reverse . dropWhile ('-'==)
+                    . reverse . dropWhile ('-'==)
 
 genTextSentence :: Gen [String]
 genTextSentence = do
