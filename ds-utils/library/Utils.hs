@@ -14,6 +14,7 @@ module Utils ( ascListByValue
              , keep
              , mapFst
              , merge
+             , nubNlnN
              , onLines
              , onReverse
              , onWords
@@ -31,7 +32,7 @@ module Utils ( ascListByValue
              ) where
 
 import Data.List     (groupBy, unfoldr, isPrefixOf, inits, tails
-                     ,isSuffixOf)
+                     ,isSuffixOf, group, sort)
 import Data.Function (on)
 
 version :: Int
@@ -101,6 +102,9 @@ groupByKey f = ascListByValue (f . head) . groupBy (equating f)
 -- accessible (and finite).
 splits :: [a] -> [([a], [a])]
 splits s = zipWith (,) (inits s) (tails s)
+
+nubNlnN :: (Ord a) => [a] -> [a]
+nubNlnN = map head . group . sort
 
 keep :: (a -> Bool) -> [a] -> [a]
 keep = filter

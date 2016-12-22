@@ -22,5 +22,6 @@ executable sfmt
                        ds-utils,
                        hyphenation,
                        filepath,
+                       QuickCheck,
                        safe,
                        split

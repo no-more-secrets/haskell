@@ -1,8 +1,14 @@
-module Hyphen (hyphenations, dehyphenate) where
+module Hyphen ( hyphenations
+              , hyphenateEnglish
+              , dehyphenate
+              ) where
 
 import Data.List        (intersect)
 import Text.Hyphenation (hyphenate, english_US)
 import Utils            (splits, endsWith, startsWith)
+
+hyphenateEnglish :: String -> [String]
+hyphenateEnglish = hyphenate english_US
 
 -- We can't do this with a  simple  map operation because we need
 -- to join adjacent words after removing a hyphen.

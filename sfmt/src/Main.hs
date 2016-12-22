@@ -2,6 +2,7 @@ import Data.List.Split    (splitOn)
 import System.Environment (getArgs)
 import System.FilePath    (takeExtension)
 import SmartFormat        (go, Config(..))
+import Test               (runTests)
 
 commentsExt :: String -> [String]
 commentsExt ".cpp" = ["//","* "]
@@ -19,12 +20,19 @@ commentsFromFileName "Makefile" = commentsExt ".mk"
 commentsFromFileName "makefile" = commentsExt ".mk"
 commentsFromFileName s          = commentsExt (takeExtension s)
 
-main :: IO ()
-main = do
-    (co:n:name:_) <- getArgs
-    let commentsOnly = read co :: Bool
-        columns      = read n  :: Int
-        filename     = name    :: String
+mainReal :: [String] -> IO ()
+mainReal args = do
+    let (co:n:name:_) = args
+        commentsOnly  = read co :: Bool
+        columns       = read n  :: Int
+        filename      = name    :: String
 
     let config = Config columns (commentsFromFileName filename)
     interact (go commentsOnly config)
+
+program :: [String] -> IO ()
+program []   = runTests >> return ()
+program args = mainReal args
+
+main :: IO ()
+main = getArgs >>= program

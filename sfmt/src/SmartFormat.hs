@@ -2,7 +2,11 @@
 -- This module contains functionality for wrapping and justifying
 -- text, either normal text  or  certain  types of code comments.
 -- ==============================================================
-module SmartFormat (go, Config(..)) where
+module SmartFormat ( go
+                   , wrapPara
+                   , justify
+                   , Config(..)
+                   ) where
 
 import Data.List       (sort, group, find, intercalate)
 import Data.List.Split (splitOn)
@@ -159,15 +163,20 @@ fmtCommentsOnly f c = concat . map process
 -- into paragraphs both outside  of  the  common prefix or inside
 -- it.
 
-procedure = [fmtMultiPara
-            ,fmtLeadingSpace
-            ,fmtCommonPrefix
-            ,fmtMultiPara
-            ]
+standard = [fmtMultiPara
+           ,fmtLeadingSpace
+           ,fmtCommonPrefix
+           ,fmtMultiPara]
 
-go' :: FMT -> [FMT -> FMT] -> FMT
-go' = foldr ($)
+commentsOnly = [fmtCommentsOnly
+               ,fmtMultiPara
+               ,fmtLeadingSpace
+               ,fmtCommonPrefix
+               ,fmtMultiPara]
+
+procedure :: FMT -> [FMT -> FMT] -> FMT
+procedure = foldr ($)
 
 go :: Bool -> FMT
-go True  = go' fmtPara (fmtCommentsOnly:procedure)
-go False = go' fmtPara procedure
+go True  = procedure fmtPara commentsOnly
+go False = procedure fmtPara standard
