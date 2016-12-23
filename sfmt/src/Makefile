@@ -5,4 +5,7 @@ test:
 	make -C ../
 	sfmt
 
-.PHONE: test _
+repl:
+	make -C ../ repl
+
+.PHONE: test repl _

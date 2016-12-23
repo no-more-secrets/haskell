@@ -7,4 +7,7 @@ build:
 clean:
 	@stack clean
 
+repl:
+	@stack ghci .
+
 .PHONY: build install clean

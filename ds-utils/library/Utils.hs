@@ -14,6 +14,7 @@ module Utils ( ascListByValue
              , keep
              , mapFst
              , merge
+             , notNull
              , nubNlnN
              , onLines
              , onReverse
@@ -37,6 +38,9 @@ import Data.Function (on)
 
 version :: Int
 version = 1
+
+notNull :: [a] -> Bool
+notNull = not . null
 
 startsWith :: (Eq a) => [a] -> [a] -> Bool
 startsWith x y = y`isPrefixOf`x

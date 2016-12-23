@@ -32,9 +32,8 @@ trace s x = T.trace (s ++ ": " ++ show x) x
 
 -- For non-empty input string but  zero  columns we should end up
 -- with precisely one word per line.
-prop_zeroColumns :: TestText -> Bool
-prop_zeroColumns (TestText "") = True
-prop_zeroColumns (TestText s)  = (lengths == [1])
+prop_zeroColumns :: TestText -> Property
+prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
   where lengths = nubNlnN $ map length $ wrapPara 0 $ words $ s
 
 -- If we word wrap nothing then we should get nothing.
@@ -44,9 +43,8 @@ prop_emptyString (Columns n) = (wrapPara n [] == [])
 -- If column number is  large  enough  to  hold  the entire input
 -- string then the word-wrapped output  should only have a single
 -- line (or no lines if input is empty).
-prop_singleLine :: TestText -> Bool
-prop_singleLine (TestText "") = True
-prop_singleLine (TestText s)  = (length wrapped == 1)
+prop_singleLine :: TestText -> Property
+prop_singleLine (TestText s) = (notNull s ==> (length wrapped == 1))
   where
     ws      = words s
     columns = length $ unwords $ ws
@@ -57,21 +55,21 @@ prop_singleLine (TestText s)  = (length wrapped == 1)
 -- lines (empty input) or produces lines that have length l which
 -- is 0 < l <=  n.  In  this  case  the "length" means the length
 -- after unwords'ing.
-prop_bounds :: Columns -> TestText -> Bool
-prop_bounds (Columns n) (TestText s) = (null lengths || fits)
+prop_bounds :: Columns -> TestText -> Property
+prop_bounds (Columns n) (TestText s) =
+    (notNull s && not tooLong ==> fits)
   where
-    tooLong x = length x > n
-    lengths   = map length     $ map unwords $ wrapPara n
-              $ remove tooLong $ words       $ s
+    ws        = words s
+    tooLong   = any ((>n) . length) ws
+    lengths   = map length $ map unwords $ wrapPara n $ ws
     fits      = (maximum lengths <= n) &&
                 (minimum lengths >  0)
 
 -- For a given number of columns n  it  must be the case that any
 -- resulting line which is longer than  n must have only one word
 -- in it.
-prop_longLine :: Columns -> TestText -> Bool
-prop_longLine (Columns _) (TestText "") = True
-prop_longLine (Columns n) (TestText s)  = result
+prop_longLine :: Columns -> TestText -> Property
+prop_longLine (Columns n) (TestText s) = (notNull s ==> result)
   where
     lengths  = nubNlnN    $ map length $ keep longLine
              $ wrapPara n $ words      $ s
@@ -112,9 +110,7 @@ prop_noEmptyWords (Columns n) (TestText s) = (null empty)
 -- makes lines that that would be too short even with hyphenation
 -- turned off.
 prop_greedyNoHyph :: Columns -> TestText -> Bool
-prop_greedyNoHyph (Columns n) (TestText s)
-    | length wrapped <= 1 = True
-    | otherwise           = result
+prop_greedyNoHyph (Columns n) (TestText s) = result
   where
     wrapped = wrapPara n $ words $ s
     result  = and $ do
@@ -137,9 +133,7 @@ prop_greedyNoHyph (Columns n) (TestText s)
 -- yields the same hyphenation  structure  as  when we hyphenated
 -- the original word.
 prop_greedy :: Columns -> TestText -> Bool
-prop_greedy (Columns n) (TestText s)
-    | length wrapped <= 1 = True
-    | otherwise           = result
+prop_greedy (Columns n) (TestText s) = result
   where
     wrapped = wrapPara n $ words $ s
     result  = and $ do
