@@ -16,7 +16,9 @@ executable sfmt
   main-is:             Main.hs
   default-language:    Haskell2010
   other-modules:       SmartFormat,
-                       Hyphen
+                       Hyphen,
+                       Justify,
+                       Wrap
   build-depends:       base >= 4.7 && < 5,
                        containers,
                        ds-utils,

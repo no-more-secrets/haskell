@@ -1,17 +1,21 @@
+-- ──────────────────────────────────────────────────────────────
+-- Tests
+-- ──────────────────────────────────────────────────────────────
+
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test (runTests) where
 
 import Hyphen
-import SmartFormat
 import Test.QuickCheck
 import Utils
+import Wrap
 
 import qualified Debug.Trace as T (trace)
 
--- ==============================================================
+-- ──────────────────────────────────────────────────────────────
 -- Types for random generation
--- ==============================================================
+-- ──────────────────────────────────────────────────────────────
 
 newtype Columns = Columns { getColumns :: Int }
   deriving (Show)
@@ -19,18 +23,18 @@ newtype Columns = Columns { getColumns :: Int }
 newtype TestText = TestText { getString :: String }
   deriving (Show)
 
--- ==============================================================
+-- ──────────────────────────────────────────────────────────────
 -- Utilities
--- ==============================================================
+-- ──────────────────────────────────────────────────────────────
 
 trace :: (Show a) => String -> a -> a
 trace s x = T.trace (s ++ ": " ++ show x) x
 
--- ==============================================================
+-- ──────────────────────────────────────────────────────────────
 -- Tests for wrapPara
--- ==============================================================
+-- ──────────────────────────────────────────────────────────────
 
--- For non-empty input string but  zero  columns we should end up
+-- For non-empty input string but zero columns we should  end  up
 -- with precisely one word per line.
 prop_zeroColumns :: TestText -> Property
 prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
@@ -50,8 +54,8 @@ prop_singleLine (TestText s) = (notNull s ==> (length wrapped == 1))
     columns = length $ unwords $ ws
     wrapped = wrapPara columns $ ws
 
--- In the case that all words have  length <= n then it should be
--- the case that the result  of  word wrapping produces either no
+-- In the case that all words have length <= n then it should  be
+-- the  case  that the result of word wrapping produces either no
 -- lines (empty input) or produces lines that have length l which
 -- is 0 < l <=  n.  In  this  case  the "length" means the length
 -- after unwords'ing.
@@ -65,7 +69,7 @@ prop_bounds (Columns n) (TestText s) =
     fits      = (maximum lengths <= n) &&
                 (minimum lengths >  0)
 
--- For a given number of columns n  it  must be the case that any
+-- For a given number of columns n it must be the case  that  any
 -- resulting line which is longer than  n must have only one word
 -- in it.
 prop_longLine :: Columns -> TestText -> Property
@@ -76,9 +80,9 @@ prop_longLine (Columns n) (TestText s) = (notNull s ==> result)
     longLine = (>n) . length . unwords
     result   = (lengths == [] || lengths == [1])
 
--- If we do a word wrap, then  join the lines onto a single line,
+-- If we do a word wrap, then join the lines onto a single  line,
 -- then dehyphenate, we should get a list of words which is iden-
--- tical to calling  `words`  on  the  original  input string. In
+-- tical to calling `words` on  the  original  input  string.  In
 -- other words, if we do a word wrap and then undo the word wrap,
 -- then we should end up exactly where we started.
 prop_inverseEqual :: Columns -> TestText -> Bool
@@ -87,26 +91,26 @@ prop_inverseEqual (Columns n) (TestText s) = (end == start)
     start = words s
     end   = (dehyphenate . concat . wrapPara n) start
 
--- The word wrap yields a list of list of words; none of these
+-- The word wrap yields a list  of  list  of words; none of these
 -- words should be empty.
 prop_noEmptyWords :: Columns -> TestText -> Bool
 prop_noEmptyWords (Columns n) (TestText s) = (null empty)
   where empty = keep null $ concat $ wrapPara n $ words $ s
 
--- If a word wrap output  gives  rise  to  multiple lines then it
--- must be the case the the amount of  free space at the end of a
+-- If  a  word  wrap  output gives rise to multiple lines then it
+-- must  be the case the the amount of free space at the end of a
 -- given line must be shorter than  the  length of the first word
 -- on the following line (otherwise  that  first word on the fol-
 -- lowing line should have been  included  in the previous line).
 -- Note that this does not attempt to hyphenate the first word on
--- the next line, so it is  a  weaker  check in that regard. Fur-
--- thermore, if the last word on  the  line is hyphenated then it
+-- the  next  line,  so it is a weaker check in that regard. Fur-
+-- thermore,  if  the last word on the line is hyphenated then it
 -- will short-circuit and pass that line since, due to the nonre-
--- cursively symmetric nature of  the hyphenation algorithm being
+-- cursively symmetric nature of the hyphenation algorithm  being
 -- used here, it is possible that the  next word on the next line
 -- will be hyphenated to a small-enough  size that it could actu-
 -- ally have fit  on  the  previous  line.  That  said, this test
--- should still fine blatant  problems  like  if the word wrapper
+-- should  still  fine  blatant problems like if the word wrapper
 -- makes lines that that would be too short even with hyphenation
 -- turned off.
 prop_greedyNoHyph :: Columns -> TestText -> Bool
@@ -121,13 +125,13 @@ prop_greedyNoHyph (Columns n) (TestText s) = result
       -- this word on the previous line
       return $ endsWithHyphen || (remaining < (length x + 1))
 
--- This is essentially prop_greedyNoHyph but  is a stronger check
--- which also tries to hyphenate the  first word on the next line
--- to try to fit it on  the  previous  line (and if that fit suc-
+-- This  is essentially prop_greedyNoHyph but is a stronger check
+-- which  also tries to hyphenate the first word on the next line
+-- to try to fit it on the previous line (and if  that  fit  suc-
 -- ceeds then it's a failure). However, it will short-circuit and
--- return true for a line  if  that  line  ends with a hyphenated
--- word. This is because  in  that  case  we cannot hyphenate the
--- first word on the next line because  it is part of the hyphen-
+-- return true for a line if that line  ends  with  a  hyphenated
+-- word. This is because in that case  we  cannot  hyphenate  the
+-- first word on the next line because it is part of the  hyphen-
 -- ation and the hyphenation algorithm  being  used does not have
 -- the property that  hyphenating  the  suffix  of  a hyphenation
 -- yields the same hyphenation  structure  as  when we hyphenated
@@ -140,11 +144,11 @@ prop_greedy (Columns n) (TestText s) = result
       (ws,(x:_)) <- zip wrapped (drop 1 wrapped)
       let endsWithHyphen = ('-'==) $ last $ last $ ws
       -- Get the length of the first component of the hyphenation
-      -- of x; note that this  includes  the length of the hyphen
+      -- of  x;  note that this includes the length of the hyphen
       -- if there is one.
       let firstHyphLen = length $ fst $ (!!1) $ hyphenations $ x
       let remaining    = n - length (unwords ws)
-      -- plus 1 for the space  needed  if  we were to insert this
+      -- plus  1  for  the space needed if we were to insert this
       -- component on the previous line
       return $ endsWithHyphen || (remaining < (firstHyphLen + 1))
 
@@ -153,7 +157,7 @@ runTests = $quickCheckAll
 --runTests = $verboseCheckAll
 --runTests = verboseCheck prop_singleLine
 
--- ______________________________________________________________
+-- ──────────────────────────────────────────────────────────────
 
 genTextChar :: Gen Char
 genTextChar = elements $ concat $
