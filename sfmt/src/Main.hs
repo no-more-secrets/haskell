@@ -1,38 +1,38 @@
-import Data.List.Split    (splitOn)
+{-# LANGUAGE LambdaCase #-}
+
 import System.Environment (getArgs)
 import System.FilePath    (takeExtension)
 import SmartFormat        (go, Config(..))
 import Test               (runTests)
 
-commentsExt :: String -> [String]
-commentsExt ".cpp" = ["//","* "]
-commentsExt ".hpp" = commentsExt ".cpp"
-commentsExt ".c"   = ["* "]
-commentsExt ".h"   = commentsExt ".c"
-commentsExt ".hs"  = ["--"]
-commentsExt ".py"  = ["#"]
-commentsExt ".sh"  = ["#"]
-commentsExt ".mk"  = ["#"]
-commentsExt ".mkh" = ["#"]
+allComments :: [String]
+allComments = ["//","* ","--","#"]
+
+extComments :: String -> [String]
+extComments = \case
+    ".hpp" -> extComments ".cpp"
+    ".h"   -> extComments ".c"
+    ".cpp" -> ["//","* "]
+    ".c"   -> ["* "]
+    ".hs"  -> ["--"]
+    ".py"  -> ["#"]
+    ".sh"  -> ["#"]
+    ".mk"  -> ["#"]
+    ".mkh" -> ["#"]
 
 commentsFromFileName :: String -> [String]
-commentsFromFileName "Makefile" = commentsExt ".mk"
-commentsFromFileName "makefile" = commentsExt ".mk"
-commentsFromFileName s          = commentsExt (takeExtension s)
+commentsFromFileName = \case
+    "Makefile" -> extComments ".mk"
+    "makefile" -> extComments ".mk"
+    s          -> extComments (takeExtension s)
 
-mainReal :: [String] -> IO ()
-mainReal args = do
-    let (co:n:name:_) = args
-        commentsOnly  = read co :: Bool
-        columns       = read n  :: Int
-        filename      = name    :: String
-
-    let config = Config columns (commentsFromFileName filename)
-    interact (go commentsOnly config)
-
-program :: [String] -> IO ()
-program []   = runTests >> return ()
-program args = mainReal args
+main_ :: [String] -> IO ()
+main_ (n:name:_) = interact $ go True  $ config
+  where config = Config (read n) (commentsFromFileName name)
+main_ (n:_)      = interact $ go False $ config
+  where config = Config (read n) allComments
 
 main :: IO ()
-main = getArgs >>= program
+main = getArgs >>= \case
+    []   -> runTests >> return ()
+    args -> main_ args

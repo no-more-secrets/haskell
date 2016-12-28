@@ -2,10 +2,10 @@
 -- This module contains functionality for wrapping and justifying
 -- text, either normal text  or  certain  types of code comments.
 -- ──────────────────────────────────────────────────────────────
-module SmartFormat ( go
-                   , justify
-                   , Config(..)
-                   ) where
+module SmartFormat     ( go
+                       , justify
+                       , Config(..)
+                       ) where
 
 import Data.List       (find, intercalate)
 import Data.List.Split (splitOn)
@@ -15,6 +15,9 @@ import Utils           (commonPrefixAll, byLine, strip
                        ,startsWith, groupByKey, endsWith)
 import Wrap            (wrapPara)
 
+-- ──────────────────────────────────────────────────────────────
+--                        Config / Types
+-- ──────────────────────────────────────────────────────────────
 data Config = Config { target   :: Int
                      , comments :: [String]
                      } deriving (Show)
@@ -25,6 +28,9 @@ data Config = Config { target   :: Int
 -- way.
 type FMT = Config -> String -> String
 
+-- ──────────────────────────────────────────────────────────────
+--                           Formatter
+-- ──────────────────────────────────────────────────────────────
 -- Perform the word wrap and  justification; this function is in-
 -- tended to be  called  after  any  preprocessing functions have
 -- e.g. removed spaces or comment prefixes.
@@ -33,7 +39,7 @@ fmtPara c = unlines . map (justify n) . wrapPara n . words
   where n = target c
 
 -- ──────────────────────────────────────────────────────────────
---                       Formatting wrappers
+--                      Formatting wrappers
 -- ──────────────────────────────────────────────────────────────
 -- Function  will  look  at  the  number of leading spaces on the
 -- first line and record  it.  Then,  it  will  strip all leading
@@ -72,6 +78,12 @@ fmtMultiPara :: FMT -> FMT
 fmtMultiPara f c = intercalate "\n" . map (f c) . map unlines
                  . splitOn [""]     . lines
 
+-- Here  we group all the lines by whether or not they start with
+-- comment markers. Then, we  only  apply the formatting function
+-- to those groups that begin with  comments. This is to facilite
+-- e.g.  selecting  all the lines in a code file and then running
+-- the formatter but only  to  affect  the  lines that begin with
+-- comments.
 fmtCommentsOnly :: FMT -> FMT
 fmtCommentsOnly f c = concat . map process
                     . groupByKey commentStart . lines
@@ -89,21 +101,13 @@ fmtCommentsOnly f c = concat . map process
 -- We need two fmtMultiPara's  because  we  may of comments split
 -- into paragraphs both outside  of  the  common prefix or inside
 -- it.
-
 standard = [fmtMultiPara
            ,fmtLeadingSpace
            ,fmtCommonPrefix
            ,fmtMultiPara]
 
-commentsOnly = [fmtCommentsOnly
-               ,fmtMultiPara
-               ,fmtLeadingSpace
-               ,fmtCommonPrefix
-               ,fmtMultiPara]
-
-procedure :: FMT -> [FMT -> FMT] -> FMT
-procedure = foldr ($)
+commentsOnly = fmtCommentsOnly:standard
 
 go :: Bool -> FMT
-go True  = procedure fmtPara commentsOnly
-go False = procedure fmtPara standard
+go True  = foldr ($) fmtPara commentsOnly
+go False = foldr ($) fmtPara standard
