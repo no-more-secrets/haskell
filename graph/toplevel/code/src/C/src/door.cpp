@@ -1,0 +1,5 @@
+#include "inc/apple.hpp"
+#include "inc/banana.hpp"
+#include "inc/grape.hpp"
+#include "inc/orange.hpp"
+#include "inc/pear.hpp"

@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Main where
@@ -15,6 +16,7 @@ import Data.GraphViz.Commands
 import Data.GraphViz.Types
 import Data.Either (rights)
 import Data.List
+
 import qualified Data.Map.Strict as M
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
@@ -28,6 +30,14 @@ import qualified System.FilePath.Find as F
 
 type HeaderGraph = Gr String ()
 
+type IncMap = M.Map FilePath [T.Text]
+
+data Project = Project
+    { searchPaths :: [T.Text]
+    , sources     :: [T.Text]
+    , lib         :: T.Text
+    } deriving (Show)
+    
 {-
       (0)
        |
@@ -62,10 +72,10 @@ g = mkGraph (zip [0..6] $ repeat "")
 
 -- Inefficient
 hasCycle :: HeaderGraph -> Bool
-hasCycle g = hasLoop g || or hasCycle'
+hasCycle g = hasLoop g || hasCycle'
   where
     rl         = reachableList g
-    hasCycle'  = [n`elem`reachables (delete n ns) | (n,ns) <- rl]
+    hasCycle'  = or [n`elem`reachables (delete n ns) | (n,ns) <- rl]
     reachables = concatMap (flip reachable g)
 
 -- For each node find all the nodes which are accessible from
@@ -125,6 +135,20 @@ findSources = F.find (pure True) p
     srcExts = [".h",".hpp",".cuh",".inl",".c",".cpp",".cu"]
 
 -- ==============================================================
+-- Single source
+-- ==============================================================
+doSource :: IncMap -> FilePath -> [T.Text]
+doSource m f = undefined
+    -- TODO: need to figure out if path of current header is always
+    --       put at the front of the path.
+
+-- ==============================================================
+-- Single Project
+-- ==============================================================
+doProject :: IncMap -> Project -> T.Text
+doProject m (Project {searchPaths, sources, lib}) = undefined
+
+-- ==============================================================
 -- Driver
 -- ==============================================================
 
@@ -134,5 +158,22 @@ main = do
     --viewGraph g "graph.png"
     sources  <- findSources "toplevel/code/src"
     includes <- mapM parseIncludes sources
-    putStrLn "-----"
-    mapM_ print (zip sources includes)
+    let m :: IncMap
+        m = M.fromList (zip sources includes)
+    prjs     <- getProjects
+    --mapM_ print prjs
+    mapM_ (print . doProject m) prjs
+
+-- ==============================================================
+-- Impl
+-- ==============================================================
+getProjects :: IO [Project]
+getProjects = do
+    sln <- readFile "toplevel/code/src/solution.sln"
+    mapM getProject (lines sln)
+  where
+    getProject :: FilePath -> IO Project
+    getProject f = do
+        prj <- TIO.readFile f
+        let (incs:srcs:lib_:_) = T.lines prj
+        return $ Project (T.words incs) (T.words srcs) lib_

@@ -1,0 +1,5 @@
+#include "inc/shelf.hpp"
+#include "inc/door.hpp"
+#include "inc/corn.hpp"
+#include "inc/carrot.hpp"
+#include "inc/hat.hpp"

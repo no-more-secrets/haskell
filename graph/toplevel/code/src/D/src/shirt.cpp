@@ -1,0 +1,6 @@
+#include "inc/hat.hpp"
+#include "inc/pants.hpp"
+#include "inc/scarf.hpp"
+#include "inc/shirt.hpp"
+#include "inc/sock.hpp"
+#include "inc/config.hpp"

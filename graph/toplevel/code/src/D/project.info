@@ -1,0 +1,3 @@
+inc ../C/inc ../A/inc ../B/inc
+toplevel/code/src/D/src/hat.cpp toplevel/code/src/D/src/pants.cpp toplevel/code/src/D/src/scarfx.cpp toplevel/code/src/D/src/shirt.cpp toplevel/code/src/D/src/sock.cpp
+toplevel/code/src/D/lib
