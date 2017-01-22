@@ -6,10 +6,11 @@ module Main where
 
 import Control.Applicative ((<|>))
 import Control.DeepSeq (($!!))
-import Control.Monad (unless, (<=<))
+import Control.Monad (forM_, unless, (<=<))
 import Data.Attoparsec.Text
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
+import Data.Graph.Inductive.NodeMap
 import Data.Graph.Inductive.PatriciaTree
 import Data.Graph.Inductive.Query.DFS
 import Data.GraphViz
@@ -33,7 +34,10 @@ import Text.Printf
 
 import qualified System.FilePath.Find as F
 
-type HeaderGraph = Gr String ()
+type HeaderGraph = UGr
+type FromNodeMap = M.Map Node FilePath
+type ToNodeMap   = M.Map FilePath Node
+type HeaderEdge  = (FilePath, FilePath, ())
 
 type IncMap = M.Map FilePath [FilePath]
 
@@ -64,7 +68,7 @@ data Project = Project
 -}
 
 g :: HeaderGraph
-g = mkGraph (zip [0..6] $ repeat "")
+g = mkGraph (zip [0..6] $ repeat ())
             [(0,1,()),
              (1,2,()),
              (2,1,()),
@@ -157,10 +161,44 @@ search m paths (f, includedFiles) = let
 flatten :: (Monad m) => m (a, m b) -> m (a,b)
 flatten = (>>= uncurry (fmap . (,)))
 
-doProject :: IncMap -> Project -> IO ()
-doProject m (Project {searchPaths, sources, lib}) = do
-    let found = flatten $ map (search m searchPaths) $ M.toList $ m
-    mapM_ print found
+doProject :: IncMap -> Project -> [(FilePath, FilePath)]
+doProject m (Project {searchPaths, sources, lib}) =
+    flatten $ map (search m searchPaths) $ M.toList $ m
+
+lookupErr :: (Ord a, Show a) => M.Map a b -> a -> b
+lookupErr m k = case M.lookup k m of
+    Nothing  -> error $ printf "%s not found in map!" (show k)
+    Just val -> val
+
+doProjectGraph :: HeaderGraph -> ToNodeMap -> IncMap -> Project -> HeaderGraph
+doProjectGraph gr toNodeMap im pr = let
+    get = lookupErr toNodeMap
+ in insEdges [(get a,get b,()) | (a,b) <- doProject im pr] gr
+
+doProjectAll :: HeaderGraph -> ToNodeMap -> FromNodeMap -> IncMap -> Project -> [(FilePath,[FilePath])]
+doProjectAll gr toNodeMap fromNodeMap im pr = let
+    gr' = doProjectGraph gr toNodeMap im pr
+    get = lookupErr toNodeMap
+    put = lookupErr fromNodeMap
+ in [(f,(delete f) $ map put $ reachable (get f) $ gr') | f <- sources pr]
+
+writeFileLog :: FilePath -> String -> IO ()
+writeFileLog f c = printf "writing %s\n" f >> writeFile f c
+
+writeProjectOutput :: Project -> [(FilePath,[FilePath])] -> IO ()
+writeProjectOutput pr = writeFileLog (lib pr </> "tlog.txt") . anchored
+  where anchored = unlines . concat . map (\(x,rs) -> (('^':x):rs))
+
+-- ==============================================================
+-- Graph maker
+-- ==============================================================
+makeGraph :: [FilePath] -> (HeaderGraph, FromNodeMap, ToNodeMap)
+makeGraph files = let
+    nodes       = Data.List.take (length files) [0..]
+    fromNodeMap = M.fromList (zip nodes files)
+    toNodeMap   = M.fromList (zip files nodes)
+    gr          = mkUGraph nodes []
+ in (gr, fromNodeMap, toNodeMap)
 
 -- ==============================================================
 -- Driver
@@ -168,17 +206,19 @@ doProject m (Project {searchPaths, sources, lib}) = do
 
 main :: IO ()
 main = do
-    --quitWithoutGraphviz "graphviz is not installed!"
+    quitWithoutGraphviz "graphviz is not installed!"
     --viewGraph g "graph.png"
     sources  <- findSources "toplevel/code/src"
     includes <- mapM parseIncludes sources
     --let info = zip sources includes
-    let m :: IncMap
+    let (gr, fromNodeMap, toNodeMap) = makeGraph sources
+        m :: IncMap
         m = M.fromList (zip sources includes)
     prjs     <- getProjects
-    mapM_ print prjs
+    --mapM_ print prjs
     --mapM_ (doProject info) prjs
-    doProject m (prjs !! 0)
+    let results = map (doProjectAll gr toNodeMap fromNodeMap m) prjs
+    mapM_ (uncurry writeProjectOutput) (zip prjs results)
 
 -- ==============================================================
 -- Impl
