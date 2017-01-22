@@ -1,5 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
+import Control.Applicative ((<|>))
+import Control.DeepSeq (($!!))
+import Control.Monad (unless, (<=<))
+import Data.Attoparsec.Text
 import Data.Graph.Inductive.Graph
 import Data.Graph.Inductive.Basic
 import Data.Graph.Inductive.PatriciaTree
@@ -7,10 +13,18 @@ import Data.Graph.Inductive.Query.DFS
 import Data.GraphViz
 import Data.GraphViz.Commands
 import Data.GraphViz.Types
+import Data.Either (rights)
 import Data.List
-import qualified Data.Text.Lazy as T
-import qualified Data.Text.Lazy.IO as TIO
+import qualified Data.Map.Strict as M
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text as T
+import qualified Data.Text.IO as TIO
+import qualified Data.Text.Lazy.IO as TLIO
 import Text.Printf
+--import System.Directory.Tree
+import System.FilePath.Posix
+
+import qualified System.FilePath.Find as F
 
 type HeaderGraph = Gr String ()
 
@@ -68,7 +82,7 @@ savePng g f = runGraphviz (defaultVis g) Png f >>= printf msg
   where msg = "saved file %s\n"
 
 printGraph :: HeaderGraph -> IO ()
-printGraph = TIO.putStrLn . printDotGraph . defaultVis
+printGraph = TLIO.putStrLn . printDotGraph . defaultVis
 
 printGraphStats :: HeaderGraph -> IO ()
 printGraphStats g = do
@@ -88,7 +102,37 @@ viewGraph g f = do
     printGraphStats g
     savePng         g f
 
+-- ==============================================================
+-- Parsing
+-- ==============================================================
+
+parseIncludes :: FilePath -> IO [T.Text]
+parseIncludes = ((return $!!) . go) <=< TIO.readFile
+  where
+    go = rights . map (parseOnly ps) . T.lines
+    ps = skipSpace >> char '#' >> skipSpace >> string "include"
+       >> skipSpace >> (between '"' '"' <|> between '<' '>')
+    l`between`r = char l *> takeTill (==r) <* char r
+
+-- ==============================================================
+-- Finding
+-- ==============================================================
+
+findSources :: FilePath -> IO [FilePath]
+findSources = F.find (pure True) p
+  where
+    p = ((`elem`srcExts) . takeExtension) <$> F.fileName
+    srcExts = [".h",".hpp",".cuh",".inl",".c",".cpp",".cu"]
+
+-- ==============================================================
+-- Driver
+-- ==============================================================
+
 main :: IO ()
 main = do
-    quitWithoutGraphviz "graphviz is not installed!"
-    viewGraph g "graph.png"
+    --quitWithoutGraphviz "graphviz is not installed!"
+    --viewGraph g "graph.png"
+    sources  <- findSources "toplevel/code/src"
+    includes <- mapM parseIncludes sources
+    putStrLn "-----"
+    mapM_ print (zip sources includes)
