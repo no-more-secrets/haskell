@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Main where
 
@@ -16,26 +17,30 @@ import Data.GraphViz.Commands
 import Data.GraphViz.Types
 import Data.Either (rights)
 import Data.List
+import Data.Maybe (catMaybes)
 
 import qualified Data.Map.Strict as M
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import qualified Data.Text.Lazy.IO as TLIO
-import Text.Printf
 --import System.Directory.Tree
+import Safe (headMay)
 import System.FilePath.Posix
+import System.Path (absNormPath)
+
+import Text.Printf
 
 import qualified System.FilePath.Find as F
 
 type HeaderGraph = Gr String ()
 
-type IncMap = M.Map FilePath [T.Text]
+type IncMap = M.Map FilePath [FilePath]
 
 data Project = Project
-    { searchPaths :: [T.Text]
-    , sources     :: [T.Text]
-    , lib         :: T.Text
+    { searchPaths :: [FilePath]
+    , sources     :: [FilePath]
+    , lib         :: FilePath
     } deriving (Show)
     
 {-
@@ -116,10 +121,10 @@ viewGraph g f = do
 -- Parsing
 -- ==============================================================
 
-parseIncludes :: FilePath -> IO [T.Text]
+parseIncludes :: FilePath -> IO [FilePath]
 parseIncludes = ((return $!!) . go) <=< TIO.readFile
   where
-    go = rights . map (parseOnly ps) . T.lines
+    go = map T.unpack . rights . map (parseOnly ps) . T.lines
     ps = skipSpace >> char '#' >> skipSpace >> string "include"
        >> skipSpace >> (between '"' '"' <|> between '<' '>')
     l`between`r = char l *> takeTill (==r) <* char r
@@ -135,18 +140,27 @@ findSources = F.find (pure True) p
     srcExts = [".h",".hpp",".cuh",".inl",".c",".cpp",".cu"]
 
 -- ==============================================================
--- Single source
--- ==============================================================
-doSource :: IncMap -> FilePath -> [T.Text]
-doSource m f = undefined
-    -- TODO: need to figure out if path of current header is always
-    --       put at the front of the path.
-
--- ==============================================================
 -- Single Project
 -- ==============================================================
-doProject :: IncMap -> Project -> T.Text
-doProject m (Project {searchPaths, sources, lib}) = undefined
+
+findFile :: IncMap -> [FilePath] -> FilePath -> Maybe FilePath
+findFile m paths f = do
+    let candidates = catMaybes $ map (`absNormPath`f) $ paths
+    headMay $ filter (flip M.member m) $ candidates
+
+search :: IncMap -> [FilePath] -> (FilePath, [FilePath]) -> (FilePath, [FilePath])
+search m paths (f, includedFiles) = let
+    here = takeDirectory f
+    paths' = here:paths
+ in (f, catMaybes $ map (findFile m paths') $ includedFiles)
+
+flatten :: (Monad m) => m (a, m b) -> m (a,b)
+flatten = (>>= uncurry (fmap . (,)))
+
+doProject :: IncMap -> Project -> IO ()
+doProject m (Project {searchPaths, sources, lib}) = do
+    let found = flatten $ map (search m searchPaths) $ M.toList $ m
+    mapM_ print found
 
 -- ==============================================================
 -- Driver
@@ -158,11 +172,13 @@ main = do
     --viewGraph g "graph.png"
     sources  <- findSources "toplevel/code/src"
     includes <- mapM parseIncludes sources
+    --let info = zip sources includes
     let m :: IncMap
         m = M.fromList (zip sources includes)
     prjs     <- getProjects
-    --mapM_ print prjs
-    mapM_ (print . doProject m) prjs
+    mapM_ print prjs
+    --mapM_ (doProject info) prjs
+    doProject m (prjs !! 0)
 
 -- ==============================================================
 -- Impl
@@ -174,6 +190,7 @@ getProjects = do
   where
     getProject :: FilePath -> IO Project
     getProject f = do
-        prj <- TIO.readFile f
-        let (incs:srcs:lib_:_) = T.lines prj
-        return $ Project (T.words incs) (T.words srcs) lib_
+        prj <- readFile f
+        let (incs:srcs:lib_:_) = lines prj
+            paths = catMaybes $ map (absNormPath (takeDirectory f)) $ words $ incs
+        return $ Project paths (words srcs) lib_
