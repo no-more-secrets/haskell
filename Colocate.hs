@@ -8,11 +8,11 @@ import Data.List (transpose)
 import System.Environment (getArgs)
 
 -- Take a list of lists and pad all lists to the length of longest + 1
--- pad :: a -> [[a]] -> [[a]]
+pad :: a -> [[a]] -> [[a]]
 pad e xs = map (take n . (++ repeat e)) xs
     where n = (maximum . map length) xs + 1
 
--- colocate :: [[String]] -> [String]
+colocate :: [[String]] -> [String]
 colocate = map concat . transpose . map (pad ' ') . pad []
 
 -- Read arguments, read files, colocate, then print

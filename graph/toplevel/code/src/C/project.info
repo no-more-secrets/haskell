@@ -1,0 +1,3 @@
+. ../A
+toplevel/code/src/C/src/bed.cpp toplevel/code/src/C/src/chair.cpp toplevel/code/src/C/src/desk.cpp toplevel/code/src/C/src/door.cpp toplevel/code/src/C/src/shelf.cpp
+toplevel/code/src/C/lib

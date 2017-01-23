@@ -1,0 +1,6 @@
+#include "inc/config.hpp"
+#include "inc/bean.hpp"
+#include "inc/broccoli.hpp"
+#include "inc/carrot.hpp"
+#include "inc/corn.hpp"
+#include "inc/potato.hpp"

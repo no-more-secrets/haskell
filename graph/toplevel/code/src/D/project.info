@@ -1,0 +1,3 @@
+. ../C ../A ../B
+toplevel/code/src/D/src/hat.cpp toplevel/code/src/D/src/pants.cpp toplevel/code/src/D/src/scarf.cpp toplevel/code/src/D/src/shirt.cpp toplevel/code/src/D/src/sock.cpp
+toplevel/code/src/D/lib

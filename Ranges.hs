@@ -37,7 +37,3 @@ overlap  (x,y) (u,v)  = (y >= u-1) && (x <= v+1)
 
 union                :: (Ord a) => (a,a) -> (a,a) -> (a,a)
 union    (x,y) (u,v)  = (min x u, max y v)
-
-sortPair             :: (Ord a) => (a,a) -> (a,a)
-sortPair (x,y)        = if x < y then (x,y) else (y,x)
-

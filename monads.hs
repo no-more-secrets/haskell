@@ -16,7 +16,7 @@ default (Int)
 -- Random
 
 data Where = Here | There | Nowhere
-    deriving (Show, Enum)
+    deriving (Show, Enum, Ord, Eq)
 
 newtype RandomM g a = RandomM { runRandomM :: g -> (a,g) }
 
@@ -33,33 +33,32 @@ instance Applicative (RandomM g) where
 
 instance Monad (RandomM g) where
     return = pure
-    x >>= f = RandomM $ \g -> let (a,g') = runRandomM x g
-                               in runRandomM (f a) g'
+    (RandomM x) >>= f = RandomM m
+        where m = \g -> let (a,g') = x g
+                            RandomM f' = f a
+                         in f' g'
 
 instance Random Where where
-    random g = let rInt :: Int
-                   (rInt, g') = randomR (1,6) g
-                   randWhere | (rInt < 2) = Here
-                             | (rInt < 3) = There
-                             | otherwise  = Nowhere
-                in (randWhere, g')
-
+    random g        = randomR (Here,Nowhere) g
     randomR (x,y) g = let (res, g') = randomR (fromEnum x, fromEnum y) g
                        in (toEnum res, g')
 
 getRandom :: (Random a) => RandomM StdGen a
 getRandom = RandomM random
 
-result :: (Random a) => RandomM StdGen (a,a)
-result = do
-    n1 <- getRandom
-    n2 <- getRandom
-    return (n1,n2)
+getRandomR :: (Random a) => (a,a) -> RandomM StdGen a
+getRandomR p = RandomM (randomR p)
 
-randomResult :: StdGen -> (Where,Where)
-randomResult = fst . runRandomM result
+result :: RandomM StdGen (Where,Where,Where)
+result = do
+    n1 <- getRandomR (Here,Nowhere)
+    n2 <- getRandomR (Here,Nowhere)
+    n3 <- getRandomR . sortPair $ (n1,n2) 
+    return (n1,n2,n3)
 
 randomMain = print . randomResult =<< getStdGen
+    where randomResult :: StdGen -> (Where,Where,Where)
+          randomResult = fst . runRandomM result
 
 --------------------------------------------------------------------------------
 -- Error handling

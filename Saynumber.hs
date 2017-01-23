@@ -6,6 +6,7 @@ module Saynumber (sayNumber) where
 
 import Data.List (genericIndex)
 import Control.Monad (guard)
+import Test.QuickCheck (quickCheck, (==>))
 import Utils
 
 --------------------------------------------------------------------------------
@@ -52,6 +53,17 @@ sayNumber n = if n > 0 then sayPositive n else "negative " ++ sayNumber (-n)
 --------------------------------------------------------------------------------
 -- Tests for sayNumber
 --------------------------------------------------------------------------------
+
+prop_singleDigit n = (Saynumber m == singles !! m)
+  where
+    singles = ["zero","one","two","three","four","five","six","seven","eight","nine"]
+    m       = abs n `mod` 10
+
+prop_negative n =
+    | n == 0 = Saynumber n    == "zero"
+    | n >  0 = Saynumber (-n) == "negative " ++ (Saynumber n)
+    | n <  0 = "negative " ++ Saynumber (-n) == (Saynumber n)
+
 
 runTests = putStrLn $ if and sayNumberTests then "Success" else "Failed"
 

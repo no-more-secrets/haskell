@@ -1,0 +1,6 @@
+#include "inc/desk.hpp"
+#include "inc/door.hpp"
+#include "inc/pants.hpp"
+#include "inc/scarf.hpp"
+#include "inc/shirt.hpp"
+#include "inc/apple.hpp"
