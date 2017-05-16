@@ -89,7 +89,18 @@ prop_inverseEqual :: Columns -> TestText -> Bool
 prop_inverseEqual (Columns n) (TestText s) = (end == start)
   where
     start = words s
-    end   = (dehyphenate . concat . wrapPara n) start
+    end   = (dehyphen . concat . wrapPara n) start
+
+-- This is essentiall prop_inverseEqual except that we do not de-
+-- hyphenate. In other words, if we do a word wrap, then join the
+-- resulting lines onto a single line , then apply the word  wrap
+-- to  this  list,  we should obtain the same result as the first
+-- word wrap.
+prop_idempotent :: Columns -> TestText -> Bool
+prop_idempotent (Columns n) (TestText s) = (end == start)
+  where
+    start = wrapPara n $ words  $ s
+    end   = wrapPara n $ concat $ start
 
 -- The word wrap yields a list  of  list  of words; none of these
 -- words should be empty.
@@ -146,7 +157,7 @@ prop_greedy (Columns n) (TestText s) = result
       -- Get the length of the first component of the hyphenation
       -- of  x;  note that this includes the length of the hyphen
       -- if there is one.
-      let firstHyphLen = length $ head $ hyphenChunks $ x
+      let firstHyphLen = length $ head $ hyphens $ x
       let remaining    = n - length (unwords ws)
       -- plus  1  for  the space needed if we were to insert this
       -- component on the previous line
@@ -155,7 +166,7 @@ prop_greedy (Columns n) (TestText s) = result
 return []
 runTests = $quickCheckAll
 --runTests = $verboseCheckAll
---runTests = verboseCheck prop_singleLine
+--runTests = verboseCheck prop_idempotent
 
 -- ──────────────────────────────────────────────────────────────
 
