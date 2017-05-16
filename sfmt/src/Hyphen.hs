@@ -15,6 +15,5 @@ dehyphenate (x:y:rest)
 dehyphenate xs         = xs
 
 hyphenChunks :: String -> [String]
-hyphenChunks s = let
-    chunks = hyphenate english_US s
- in (map (++"-") $ init chunks) ++ [last chunks]
+hyphenChunks s = (map (++"-") $ init $ chunks) ++ [last chunks]
+  where chunks = hyphenate english_US s
