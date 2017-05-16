@@ -5,6 +5,9 @@ import System.FilePath    (takeExtension)
 import SmartFormat        (go, Config(..))
 import Test               (runTests)
 
+defaultCols :: Int
+defaultCols = 65
+
 allComments :: [String]
 allComments = ["//","* ","--","#"]
 
@@ -27,12 +30,13 @@ commentsFromFileName = \case
     s          -> extComments (takeExtension s)
 
 main_ :: [String] -> IO ()
+main_ ("test":_) = runTests >> return ()
 main_ (n:name:_) = interact $ go True  $ config
   where config = Config (read n) (commentsFromFileName name)
 main_ (n:_)      = interact $ go False $ config
   where config = Config (read n) allComments
+main_ _          = interact $ go False $ config
+  where config = Config defaultCols allComments
 
 main :: IO ()
-main = getArgs >>= \case
-    []   -> runTests >> return ()
-    args -> main_ args
+main = getArgs >>= main_

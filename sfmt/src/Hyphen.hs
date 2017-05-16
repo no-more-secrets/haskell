@@ -1,13 +1,9 @@
-module Hyphen ( hyphenateEnglish
-              , hyphenChunks
+module Hyphen ( hyphenChunks
               , dehyphenate
               ) where
 
 import Text.Hyphenation (hyphenate, english_US)
 import Utils            (endsWith, startsWith)
-
-hyphenateEnglish :: String -> [String]
-hyphenateEnglish = hyphenate english_US
 
 -- We can't do this with a  simple  map operation because we need
 -- to join adjacent words after removing a hyphen.
@@ -20,5 +16,5 @@ dehyphenate xs         = xs
 
 hyphenChunks :: String -> [String]
 hyphenChunks s = let
-    chunks = hyphenateEnglish s
+    chunks = hyphenate english_US s
  in (map (++"-") $ init chunks) ++ [last chunks]
