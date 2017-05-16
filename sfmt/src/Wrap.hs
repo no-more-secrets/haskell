@@ -3,30 +3,15 @@
 -- ──────────────────────────────────────────────────────────────
 module Wrap (wrapPara) where
 
-import Hyphen (hyphenations, dehyphenate)
-import Utils  (unfoldrList, remove)
+import Data.List (inits, splitAt)
 
-hyphen :: Int -> String -> (String, String)
-hyphen n = head . dropWhile tooLong . reverse . hyphenations
-  where tooLong (x,_) = length x > n
+import Hyphen (dehyphenate, hyphenChunks)
+import Utils  (unfoldrList)
 
 wrapOne :: Int -> [String] -> ([String], [String])
-wrapOne n = atLeast1 . worker n
-  where
-    atLeast1 ([],ws) = ([head ws], tail ws)
-    atLeast1 zs      = zs
-
-    -- Recursive worker
-    worker :: Int -> [String] -> ([String], [String])
-    worker _ []         = ([], [])
-    worker n (x:xs)
-        | n <= 0        = ([], x:xs)
-        | length x <= n = (x:left, right)
-        | otherwise     = (purge [part1], purge $ part2:xs)
-      where
-        (left,  right)  = worker (n-length x-1) xs
-        (part1, part2)  = hyphen n x
-        purge           = remove null
+wrapOne n = (splitAt =<< cut)
+  where cut  = max 1 . length . takeWhile fits . tail . inits
+        fits = (<=n) . length . unwords . dehyphenate
 
 -- Take  number  of columns and input string representing a docu-
 -- ment and reformats the text so that it fits within the  speci-
@@ -35,4 +20,5 @@ wrapOne n = atLeast1 . worker n
 -- this  line  will of course be longer than the target number of
 -- columns.
 wrapPara :: Int -> [String] -> [[String]]
-wrapPara n = unfoldrList (wrapOne n) . dehyphenate
+wrapPara n = map dehyphenate    . unfoldrList (wrapOne n)
+           . (hyphenChunks =<<) . dehyphenate

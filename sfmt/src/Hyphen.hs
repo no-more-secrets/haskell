@@ -1,11 +1,10 @@
-module Hyphen ( hyphenations
-              , hyphenateEnglish
+module Hyphen ( hyphenateEnglish
+              , hyphenChunks
               , dehyphenate
               ) where
 
-import Data.List        (intersect)
 import Text.Hyphenation (hyphenate, english_US)
-import Utils            (splits, endsWith, startsWith)
+import Utils            (endsWith, startsWith)
 
 hyphenateEnglish :: String -> [String]
 hyphenateEnglish = hyphenate english_US
@@ -19,19 +18,7 @@ dehyphenate (x:y:rest)
     | otherwise        = x:dehyphenate (y:rest)
 dehyphenate xs         = xs
 
-hyphenations :: String -> [(String, String)]
-hyphenations = map addHyphen . candidates . list
-  where
-    list :: String -> [String]
-    list s = if exempt s then [s] else (hyphenate english_US) s
-
-    candidates :: [String] -> [(String, String)]
-    candidates ss = [(concat x, concat y) | (x,y) <- splits ss]
-
-    addHyphen (xs@(_:_), ys@(_:_)) = (xs++"-", ys)
-    addHyphen p = p
-
-    -- Empty string is not exempt ?! !?
-    exempt :: String -> Bool
-    exempt s = not . null $ s`intersect`noHyp
-      where noHyp = "/\\0123456789()[]{}!@#$%^&*=_><'`"
+hyphenChunks :: String -> [String]
+hyphenChunks s = let
+    chunks = hyphenateEnglish s
+ in (map (++"-") $ init chunks) ++ [last chunks]
