@@ -1,11 +1,4 @@
-_:
-	make -C ../
+.DEFAULT_GOAL = install
 
-test:
-	make -C ../
-	sfmt
-
-repl:
-	make -C ../ repl
-
-.PHONE: test repl _
+%:
+	@make -C ../ $@

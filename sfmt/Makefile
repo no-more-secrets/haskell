@@ -10,4 +10,7 @@ clean:
 repl:
 	@stack ghci .
 
-.PHONY: build install clean
+test:
+	@stack exec -- sfmt test
+
+.PHONY: build install clean test

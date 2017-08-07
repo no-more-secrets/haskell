@@ -6,7 +6,6 @@
 
 module Test (runTests) where
 
-import Hyphen
 import Test.QuickCheck
 import Utils
 import Wrap
@@ -31,18 +30,21 @@ trace :: (Show a) => String -> a -> a
 trace s x = T.trace (s ++ ": " ++ show x) x
 
 -- ──────────────────────────────────────────────────────────────
--- Tests for wrapPara
+-- Tests for wrap
 -- ──────────────────────────────────────────────────────────────
+
+-- TODO: make a test that counts the number of hyphens before and
+--       after a wrap
 
 -- For non-empty input string but zero columns we should  end  up
 -- with precisely one word per line.
 prop_zeroColumns :: TestText -> Property
 prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
-  where lengths = nubNlnN $ map length $ wrapPara 0 $ words $ s
+  where lengths = nubNlnN $ map length $ wrap 0 $ words $ s
 
 -- If we word wrap nothing then we should get nothing.
 prop_emptyString :: Columns -> Bool
-prop_emptyString (Columns n) = (wrapPara n [] == [])
+prop_emptyString (Columns n) = (wrap n [] == [])
 
 -- If column number is  large  enough  to  hold  the entire input
 -- string then the word-wrapped output  should only have a single
@@ -52,7 +54,7 @@ prop_singleLine (TestText s) = (notNull s ==> (length wrapped == 1))
   where
     ws      = words s
     columns = length $ unwords $ ws
-    wrapped = wrapPara columns $ ws
+    wrapped = wrap columns $ ws
 
 -- In the case that all words have length <= n then it should  be
 -- the  case  that the result of word wrapping produces either no
@@ -65,7 +67,7 @@ prop_bounds (Columns n) (TestText s) =
   where
     ws        = words s
     tooLong   = any ((>n) . length) ws
-    lengths   = map length $ map unwords $ wrapPara n $ ws
+    lengths   = map length $ map unwords $ wrap n $ ws
     fits      = (maximum lengths <= n) &&
                 (minimum lengths >  0)
 
@@ -76,7 +78,7 @@ prop_longLine :: Columns -> TestText -> Property
 prop_longLine (Columns n) (TestText s) = (notNull s ==> result)
   where
     lengths  = nubNlnN    $ map length $ keep longLine
-             $ wrapPara n $ words      $ s
+             $ wrap n $ words      $ s
     longLine = (>n) . length . unwords
     result   = (lengths == [] || lengths == [1])
 
@@ -89,7 +91,7 @@ prop_inverseEqual :: Columns -> TestText -> Bool
 prop_inverseEqual (Columns n) (TestText s) = (end == start)
   where
     start = words s
-    end   = (dehyphen . concat . wrapPara n) start
+    end   = (dehyphenate . concat . wrap n) start
 
 -- This is essentiall prop_inverseEqual except that we do not de-
 -- hyphenate. In other words, if we do a word wrap, then join the
@@ -99,14 +101,14 @@ prop_inverseEqual (Columns n) (TestText s) = (end == start)
 prop_idempotent :: Columns -> TestText -> Bool
 prop_idempotent (Columns n) (TestText s) = (end == start)
   where
-    start = wrapPara n $ words  $ s
-    end   = wrapPara n $ concat $ start
+    start = wrap n $ words  $ s
+    end   = wrap n $ concat $ start
 
 -- The word wrap yields a list  of  list  of words; none of these
 -- words should be empty.
 prop_noEmptyWords :: Columns -> TestText -> Bool
 prop_noEmptyWords (Columns n) (TestText s) = (null empty)
-  where empty = keep null $ concat $ wrapPara n $ words $ s
+  where empty = keep null $ concat $ wrap n $ words $ s
 
 -- If  a  word  wrap  output gives rise to multiple lines then it
 -- must  be the case the the amount of free space at the end of a
@@ -127,7 +129,7 @@ prop_noEmptyWords (Columns n) (TestText s) = (null empty)
 prop_greedyNoHyph :: Columns -> TestText -> Bool
 prop_greedyNoHyph (Columns n) (TestText s) = result
   where
-    wrapped = wrapPara n $ words $ s
+    wrapped = wrap n $ words $ s
     result  = and $ do
       (ws,(x:_)) <- zip wrapped (drop 1 wrapped)
       let endsWithHyphen = ('-'==) $ last $ last $ ws
@@ -150,14 +152,14 @@ prop_greedyNoHyph (Columns n) (TestText s) = result
 prop_greedy :: Columns -> TestText -> Bool
 prop_greedy (Columns n) (TestText s) = result
   where
-    wrapped = wrapPara n $ words $ s
+    wrapped = wrap n $ words $ s
     result  = and $ do
       (ws,(x:_)) <- zip wrapped (drop 1 wrapped)
       let endsWithHyphen = ('-'==) $ last $ last $ ws
       -- Get the length of the first component of the hyphenation
       -- of  x;  note that this includes the length of the hyphen
       -- if there is one.
-      let firstHyphLen = length $ head $ hyphens $ x
+      let firstHyphLen = length $ head $ hyphenate $ x
       let remaining    = n - length (unwords ws)
       -- plus  1  for  the space needed if we were to insert this
       -- component on the previous line

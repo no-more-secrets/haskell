@@ -13,7 +13,7 @@ import Data.Maybe      (fromMaybe)
 import Justify         (justify)
 import Utils           (commonPrefixAll, byLine, strip
                        ,startsWith, groupByKey, endsWith)
-import Wrap            (wrapPara)
+import Wrap            (wrap)
 
 -- ──────────────────────────────────────────────────────────────
 --                        Config / Types
@@ -35,7 +35,7 @@ type FMT = Config -> String -> String
 -- tended to be  called  after  any  preprocessing functions have
 -- e.g. removed spaces or comment prefixes.
 fmtPara :: FMT
-fmtPara c = unlines . map (justify n) . wrapPara n . words
+fmtPara c = unlines . map (justify n) . wrap n . words
   where n = target c
 
 -- ──────────────────────────────────────────────────────────────
@@ -51,7 +51,8 @@ fmtLeadingSpace :: FMT -> FMT
 fmtLeadingSpace f c xs = noSpaces (f c') xs
   where prefix     = takeWhile (' '==) $ xs
         noSpaces f = byLine (prefix++) . f . byLine strip
-        c'         = Config (target c-length prefix) (comments c)
+        --c'         = Config (target c-length prefix) (comments c)
+        c'         = c{ target = target c-length prefix }
 
 -- Will apply the fiven formatting function, but first  will  see
 -- if  the lines in the text each begin with a known code-comment

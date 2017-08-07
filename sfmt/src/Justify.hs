@@ -40,8 +40,8 @@ distribute s n | n <= 0    = []
 -- between words so as to  span  a  length equal to that integer.
 -- Exceptions to that are if a  line contains only a single word.
 justify_ :: Int -> [String] -> String
-justify_ w xs = concat . merge xs  . map (spaces . length) . group
-              . sort   . take need . distribute seed $ length xs-1
+justify_ w xs = concat $ merge xs  $ map (spaces . length) $ group
+              $ sort   $ take need $ distribute seed $ length xs-1
   where
     need = w - length (concat xs)
 
@@ -61,7 +61,7 @@ justify_ w xs = concat . merge xs  . map (spaces . length) . group
 -- since they seem to  produce  reasonable-looking  output  (note
 -- that only their ratio is relevant).
 shouldJustify :: Int -> [String] -> Bool
-shouldJustify n ws = (89*n < 100*noJust)
+shouldJustify n ws = (89*n < 100*noJust) && (n > noJust)
   where noJust = length $ unwords $ ws
 
 -- Will justify when appropriate

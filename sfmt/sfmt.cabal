@@ -15,9 +15,10 @@ executable sfmt
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
-  other-modules:       SmartFormat,
-                       Hyphen,
+  other-modules:       Hyphen,
                        Justify,
+                       SmartFormat,
+                       Test,
                        Wrap
   build-depends:       base >= 4.7 && < 5,
                        containers,
