@@ -33,9 +33,6 @@ trace s x = T.trace (s ++ ": " ++ show x) x
 -- Tests for wrap
 -- ──────────────────────────────────────────────────────────────
 
--- TODO: make a test that counts the number of hyphens before and
---       after a wrap
-
 -- For non-empty input string but zero columns we should  end  up
 -- with precisely one word per line.
 prop_zeroColumns :: TestText -> Property
@@ -110,6 +107,17 @@ prop_noEmptyWords :: Columns -> TestText -> Bool
 prop_noEmptyWords (Columns n) (TestText s) = (null empty)
   where empty = keep null $ concat $ wrap n $ words $ s
 
+-- Given an initial  text  containing  at  least  one hyphen, the
+-- total  number of hyphens in the text should be preserved after
+-- wrapping and dehyphenating.
+prop_constHyphs :: Columns -> TestText -> Property
+prop_constHyphs (Columns n) (TestText s) = (hasHyphs ==> result)
+  where
+    s' = concat $ dehyphenate $ concat $ wrap n $ words $ s
+    numHyphs = length . filter ('-'==)
+    hasHyphs = numHyphs s > 0
+    result   = (numHyphs s == numHyphs s')
+
 -- If  a  word  wrap  output gives rise to multiple lines then it
 -- must  be the case the the amount of free space at the end of a
 -- given line must be shorter than  the  length of the first word
@@ -168,7 +176,7 @@ prop_greedy (Columns n) (TestText s) = result
 return []
 runTests = $quickCheckAll
 --runTests = $verboseCheckAll
---runTests = verboseCheck prop_idempotent
+--runTests = verboseCheck prop_constHyphs
 
 -- ──────────────────────────────────────────────────────────────
 
