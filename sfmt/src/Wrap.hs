@@ -1,8 +1,8 @@
-module Wrap (wrap, hyphenate, dehyphenate) where
+module Wrap (wrap) where
 
-import Data.List  (splitAt, transpose)
-import Hyphen     (hyphenate, dehyphenate, isFragment)
-import Utils      (unfoldrList)
+import Data.List (splitAt)
+import Hyphen    (hyphenate, dehyphenate, isFragment)
+import Utils     (unfoldrList)
 
 x -| y = zipWith (-) x y
 x +| y = zipWith (+) x y
@@ -16,7 +16,7 @@ fit :: Int -> [String] -> Int
 fit n xs = length $ takeWhile (<=n) $ (hyp +|) $ scanl1 (+) $ zs
   where
     -- length without hyphen + leading space if no hyphen before
-    zs  = map length xs -| hyp +| (0:map (1-) hyp)
+    zs  = (map length xs -| hyp) +| (0:map (1-) hyp)
     hyp = map (fromEnum . isFragment) xs
 
 -- Word wrap a list of words to  fit  on  a line of size n (which

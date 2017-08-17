@@ -1,14 +1,14 @@
 -- ──────────────────────────────────────────────────────────────
 -- Tests
 -- ──────────────────────────────────────────────────────────────
-
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test (runTests) where
 
 import Test.QuickCheck
-import Utils
+import Hyphen
 import Wrap
+import Utils
 
 import qualified Debug.Trace as T (trace)
 
@@ -42,6 +42,35 @@ prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
 -- If we word wrap nothing then we should get nothing.
 prop_emptyString :: Columns -> Bool
 prop_emptyString (Columns n) = (wrap n [] == [])
+
+-- TODO:
+--
+--  Allow random words consisting only of dashes
+--
+--  Hyphen.hs Tests
+--
+--    * isFragment verification tests
+--
+--    * hyphenate and dehyphenate should be inverses when input
+--      contains no fragments (apart from possibly last word).
+--
+--    * dehyphenate should be idempotent
+--
+--    * dehyphenate should never increase the number of words
+--
+--    * hyphenate should never decrease the number of words
+--
+--    * hyphenating a word, then repeatedly hyphenating the
+--      components recursively should eventually converge to be
+--      idempotent in a number of steps less than the length of
+--      the word.
+--
+--    * The result of calling hyphenate on a word for which isFragment
+--      is False should yield a list of words, all of which have
+--      isFragment==True except for the last word.
+--
+--    * Calling hyphenate on a word for which isFragment==True
+--      should leave the word untouched.
 
 -- If column number is  large  enough  to  hold  the entire input
 -- string then the word-wrapped output  should only have a single
@@ -79,6 +108,15 @@ prop_longLine (Columns n) (TestText s) = (notNull s ==> result)
     longLine = (>n) . length . unwords
     result   = (lengths == [] || lengths == [1])
 
+-- If we wrap a text then  the  total  number of words cannot de-
+-- crease.
+prop_nonDecrease :: Columns -> TestText -> Bool
+prop_nonDecrease (Columns n) (TestText s) = (end >= start)
+  where
+    ws    = words s
+    start = length ws
+    end   = length $ concat $ wrap n $ ws
+
 -- If we do a word wrap, then join the lines onto a single  line,
 -- then dehyphenate, we should get a list of words which is iden-
 -- tical to calling `words` on  the  original  input  string.  In
@@ -90,22 +128,35 @@ prop_inverseEqual (Columns n) (TestText s) = (end == start)
     start = words s
     end   = (dehyphenate . concat . wrap n) start
 
--- This is essentiall prop_inverseEqual except that we do not de-
--- hyphenate. In other words, if we do a word wrap, then join the
--- resulting lines onto a single line , then apply the word  wrap
--- to  this  list,  we should obtain the same result as the first
--- word wrap.
+-- If  we  do  a  word wrap, then join the resulting lines onto a
+-- single line without dehyphenating, then apply the word wrap to
+-- this list, we should obtain the same result as the first  word
+-- wrap.
 prop_idempotent :: Columns -> TestText -> Bool
 prop_idempotent (Columns n) (TestText s) = (end == start)
   where
     start = wrap n $ words  $ s
     end   = wrap n $ concat $ start
 
+-- The word wrap yields  a  list  of  lines;  none of these lines
+-- should be empty.
+prop_noEmptyLines :: Columns -> TestText -> Bool
+prop_noEmptyLines (Columns n) (TestText s) = (null empty)
+  where empty = keep null $ wrap n $ words $ s
+
 -- The word wrap yields a list  of  list  of words; none of these
 -- words should be empty.
 prop_noEmptyWords :: Columns -> TestText -> Bool
 prop_noEmptyWords (Columns n) (TestText s) = (null empty)
   where empty = keep null $ concat $ wrap n $ words $ s
+
+-- In a wrapped text, any word which has isFragment==True must be
+-- the last word on a line.
+prop_fragLast :: Columns -> TestText -> Bool
+prop_fragLast (Columns n) (TestText s) = good
+  where
+    fragLast = (<=1) . length . dropWhile (not . isFragment)
+    good     = all fragLast $ wrap n $ words $ s
 
 -- Given an initial  text  containing  at  least  one hyphen, the
 -- total  number of hyphens in the text should be preserved after
@@ -189,20 +240,19 @@ genTextPunct = elements "!.?"
 
 genTextWord :: Gen String
 genTextWord = do
-    len <- choose (0,15) 
+    len <- choose (0,20)
     infiniteWord <- infiniteListOf genTextChar
-    let word = (dropEdgeHyphens . take len) infiniteWord
+    let word = (dropEndHyphens . take len) infiniteWord
     extra <- genTextChar
-    let word' = if null word then [extra] else word'
-    return (take len word)
+    let word' = if null word then [extra] else word
+    return (take len word')
   where
-    dropEdgeHyphens :: String -> String
-    dropEdgeHyphens = reverse . dropWhile ('-'==)
-                    . reverse . dropWhile ('-'==)
+    dropEndHyphens :: String -> String
+    dropEndHyphens = reverse . dropWhile ('-'==) . reverse
 
 genTextSentence :: Gen [String]
 genTextSentence = do
-    words <- listOf1 genTextWord
+    words <- listOf genTextWord
     lastWord <- genTextWord
     punct <- genTextPunct
     return $ words ++ [lastWord ++ [punct]]
