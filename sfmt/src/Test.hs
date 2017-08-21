@@ -70,14 +70,15 @@ prop_emptyString (Columns n) = (wrap n [] == [])
 --          contains no fragments (apart from possibly last word).
 
 -- If column number is  large  enough  to  hold  the entire input
--- string then the word-wrapped output  should only have a single
--- line (or no lines if input is empty).
-prop_singleLine :: TestText -> Property
-prop_singleLine (TestText s) = (notNull s ==> (length wrapped == 1))
+-- string (and if input  is  not  empty)  then  the  word-wrapped
+-- output should only have a single line.
+prop_singleLine :: Columns -> Columns -> TestText -> Property
+prop_singleLine (Columns n) (Columns m) (TestText s) = (fits ==> good)
   where
-    ws      = words s
-    columns = length $ unwords $ ws
-    wrapped = wrap columns $ ws
+    s'      = take m s
+    fits    = length s' > 0 && length s' <= n
+    wrapped = wrap n $ words $ s'
+    good    = (length wrapped == 1)
 
 -- In the case that all words have length <= n then it should  be
 -- the  case  that the result of word wrapping produces either no
