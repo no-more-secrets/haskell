@@ -218,7 +218,7 @@ prop_greedy (Columns n) (TestText s) = result
       -- Get the length of the first component of the hyphenation
       -- of  x;  note that this includes the length of the hyphen
       -- if there is one.
-      let firstHyphLen = length $ head $ hyphenate $ x
+      let firstHyphLen = length $ head $ hyphenate . pure $ x
       let remaining    = n - length (unwords ws)
       -- plus  1  for  the space needed if we were to insert this
       -- component on the previous line

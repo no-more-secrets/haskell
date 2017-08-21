@@ -1,8 +1,8 @@
 module Wrap (wrap) where
 
-import Data.List (splitAt)
-import Hyphen    (hyphenate, dehyphenate, isFragment)
-import Utils     (unfoldrList)
+import Data.List       (splitAt)
+import Data.List.Split (chop)
+import Hyphen          (hyphenate, dehyphenate, isFragment)
 
 x -| y = zipWith (-) x y
 x +| y = zipWith (+) x y
@@ -26,5 +26,5 @@ fit n xs = length $ takeWhile (<=n) $ (hyp +|) $ scanl1 (+) $ zs
 -- line then it will go on  its  own  line and the length of that
 -- line will be > n.
 wrap :: Int -> [String] -> [[String]]
-wrap n = map dehyphenate . wrap' . (hyphenate =<<) . dehyphenate
-  where wrap' = unfoldrList (splitAt =<< max 1 . fit n)
+wrap n = map dehyphenate . wrap' . hyphenate . dehyphenate
+  where wrap' = chop (splitAt =<< max 1 . fit n)
