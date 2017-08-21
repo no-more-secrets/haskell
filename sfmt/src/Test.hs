@@ -49,28 +49,25 @@ prop_emptyString (Columns n) = (wrap n [] == [])
 --
 --  Hyphen.hs Tests
 --
---    * isFragment verification tests
+--    * dehyphenate
 --
---    * hyphenate and dehyphenate should be inverses when input
---      contains no fragments (apart from possibly last word).
+--        - dehyphenate should be idempotent
 --
---    * dehyphenate should be idempotent
+--        - dehyphenate should never increase the number of words
 --
---    * dehyphenate should never increase the number of words
+--    * hyphenate
 --
---    * hyphenate should never decrease the number of words
+--        - hyphenate should never decrease the number of words
 --
---    * hyphenating a word, then repeatedly hyphenating the
---      components recursively should eventually converge to be
---      idempotent in a number of steps less than the length of
---      the word.
+--        - hyphenating a word, then repeatedly hyphenating the
+--          components recursively should eventually converge to be
+--          idempotent in a number of steps less than the length of
+--          the word.
 --
---    * The result of calling hyphenate on a word for which isFragment
---      is False should yield a list of words, all of which have
---      isFragment==True except for the last word.
+--    * both
 --
---    * Calling hyphenate on a word for which isFragment==True
---      should leave the word untouched.
+--        - hyphenate and dehyphenate should be inverses when input
+--          contains no fragments (apart from possibly last word).
 
 -- If column number is  large  enough  to  hold  the entire input
 -- string then the word-wrapped output  should only have a single
@@ -152,11 +149,12 @@ prop_noEmptyWords (Columns n) (TestText s) = (null empty)
 
 -- In a wrapped text, any word which has isFragment==True must be
 -- the last word on a line.
-prop_fragLast :: Columns -> TestText -> Bool
-prop_fragLast (Columns n) (TestText s) = good
-  where
-    fragLast = (<=1) . length . dropWhile (not . isFragment)
-    good     = all fragLast $ wrap n $ words $ s
+-- TODO: need to recreate isFragment here only using hyphenate/dehyphenate
+--prop_fragLast :: Columns -> TestText -> Bool
+--prop_fragLast (Columns n) (TestText s) = good
+--  where
+--    fragLast = (<=1) . length . dropWhile (not . isFragment)
+--    good     = all fragLast $ wrap n $ words $ s
 
 -- Given an initial  text  containing  at  least  one hyphen, the
 -- total  number of hyphens in the text should be preserved after
