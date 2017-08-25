@@ -103,6 +103,7 @@ fmtCommentsOnly f c = concat . map process
 -- into paragraphs both outside  of  the  common prefix or inside
 -- it.
 standard = [fmtMultiPara
+           --,fmtMultiPara
            ,fmtLeadingSpace
            ,fmtCommonPrefix
            ,fmtMultiPara]

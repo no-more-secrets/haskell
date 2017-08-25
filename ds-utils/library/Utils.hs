@@ -1,6 +1,5 @@
 module Utils ( ascListByValue
              , byLine
-             , chunks
              , commonPrefix
              , commonPrefixAll
              , compareWith
@@ -25,7 +24,6 @@ module Utils ( ascListByValue
              , startsWith
              , strip
              , uncurry3
-             , unfoldrList
              , uniform
              , version
              , zipWhile
@@ -143,11 +141,13 @@ sortPair (x,y) = if x < y then (x,y) else (y,x)
 
 -- An unfoldr function for lists that keeps running until
 -- the input (which is a list) becomes empty.
-unfoldrList :: ([b] -> (a,[b])) -> [b] -> [a]
-unfoldrList f = unfoldr f'
-    where
-        f' [] = Nothing
-        f' xs = Just (f xs)
+-- REPLACED WITH chop FROM Data.List.Split
+--unfoldrList :: ([b] -> (a,[b])) -> [b] -> [a]
+--unfoldrList f = unfoldr f'
+--    where
+--        f' [] = Nothing
+--        f' xs = Just (f xs)
 
-chunks :: Int -> [a] -> [[a]]
-chunks = unfoldrList . splitAt
+-- REPLACED WITH chunksOf FROM Data.List.Split
+--chunks :: Int -> [a] -> [[a]]
+--chunks = chop . splitAt

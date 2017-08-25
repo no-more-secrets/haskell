@@ -12,9 +12,9 @@ import Utils
 
 import qualified Debug.Trace as T (trace)
 
--- ──────────────────────────────────────────────────────────────
--- Types for random generation
--- ──────────────────────────────────────────────────────────────
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--                              Types
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 newtype Columns = Columns { getColumns :: Int }
   deriving (Show)
@@ -22,38 +22,53 @@ newtype Columns = Columns { getColumns :: Int }
 newtype TestText = TestText { getString :: String }
   deriving (Show)
 
--- ──────────────────────────────────────────────────────────────
--- Utilities
--- ──────────────────────────────────────────────────────────────
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--                           Utilities
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 trace :: (Show a) => String -> a -> a
 trace s x = T.trace (s ++ ": " ++ show x) x
 
--- ──────────────────────────────────────────────────────────────
--- Tests for wrap
--- ──────────────────────────────────────────────────────────────
+isFragment x
+    | dehyphenate [x,"_"] == [x,"_"]       = False
+    | dehyphenate [x,"_"] == [init x++"_"] = True
+    | otherwise = error "invalid result in isFragment"
 
--- For non-empty input string but zero columns we should  end  up
--- with precisely one word per line.
-prop_zeroColumns :: TestText -> Property
-prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
-  where lengths = nubNlnN $ map length $ wrap 0 $ words $ s
-
--- If we word wrap nothing then we should get nothing.
-prop_emptyString :: Columns -> Bool
-prop_emptyString (Columns n) = (wrap n [] == [])
-
--- TODO:
---
 --  Allow random words consisting only of dashes
+--
+--  Laziness tests?
+--
+--  Wrap.hs Tests
+--
+--    * wrap
+--
+--        - Need test cases that supply hyphenated input to wrap
 --
 --  Hyphen.hs Tests
 --
 --    * dehyphenate
 --
+--        - dehyphenate, after being applied to a list, should
+--          yield a result such that no item is a fragment
+--          except possibly the last one.
+--
 --        - dehyphenate should be idempotent
 --
 --        - dehyphenate should never increase the number of words
+--
+--        - dehyphenate, when acting on a list of one word,
+--          should always leave it unchanged.
+--
+--        - dehyphenate, when acting on a list of two words,
+--          should either join them or leave them unchanged.
+--
+--        - dehyphenate (dehyphenate xs ++ dehyphenate ys) ==
+--        - dehyphenate (xs++ys)
+--
+--        - dehyphenate, when applied to xs and ys, yielding
+--          xs' and ys', should, when applied to (xs'++ys')
+--          produce a result whose length is either equal to
+--          length xs' + length ys', or one less.
 --
 --    * hyphenate
 --
@@ -69,13 +84,33 @@ prop_emptyString (Columns n) = (wrap n [] == [])
 --        - hyphenate and dehyphenate should be inverses when input
 --          contains no fragments (apart from possibly last word).
 
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--                             Hyphen
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+--prop_hyphNoDec :: k
+
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--                              Wrap
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+-- For non-empty input string but zero columns we should  end  up
+-- with precisely one word per line.
+prop_zeroColumns :: TestText -> Property
+prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
+  where lengths = nubNlnN $ map length $ wrap 0 $ words $ s
+
+-- If we word wrap nothing then we should get nothing.
+prop_emptyString :: Columns -> Bool
+prop_emptyString (Columns n) = (wrap n [] == [])
+
 -- If column number is  large  enough  to  hold  the entire input
 -- string (and if input  is  not  empty)  then  the  word-wrapped
 -- output should only have a single line.
 prop_singleLine :: Columns -> Columns -> TestText -> Property
 prop_singleLine (Columns n) (Columns m) (TestText s) = (fits ==> good)
   where
-    s'      = take m s
+    s'      = take m $ unwords $ words $ s
     fits    = length s' > 0 && length s' <= n
     wrapped = wrap n $ words $ s'
     good    = (length wrapped == 1)
@@ -150,12 +185,11 @@ prop_noEmptyWords (Columns n) (TestText s) = (null empty)
 
 -- In a wrapped text, any word which has isFragment==True must be
 -- the last word on a line.
--- TODO: need to recreate isFragment here only using hyphenate/dehyphenate
---prop_fragLast :: Columns -> TestText -> Bool
---prop_fragLast (Columns n) (TestText s) = good
---  where
---    fragLast = (<=1) . length . dropWhile (not . isFragment)
---    good     = all fragLast $ wrap n $ words $ s
+prop_fragLast :: Columns -> TestText -> Bool
+prop_fragLast (Columns n) (TestText s) = good
+  where
+    fragLast = (<=1) . length . dropWhile (not . isFragment)
+    good     = all fragLast $ wrap n $ words $ s
 
 -- Given an initial  text  containing  at  least  one hyphen, the
 -- total  number of hyphens in the text should be preserved after
@@ -223,12 +257,16 @@ prop_greedy (Columns n) (TestText s) = result
       -- component on the previous line
       return $ endsWithHyphen || (remaining < (firstHyphLen + 1))
 
+-- ──────────────────────────────────────────────────────────────
+
 return []
 runTests = $quickCheckAll
 --runTests = $verboseCheckAll
 --runTests = verboseCheck prop_constHyphs
 
--- ──────────────────────────────────────────────────────────────
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+--                           Generators
+-- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
 genTextChar :: Gen Char
 genTextChar = elements $ concat $
