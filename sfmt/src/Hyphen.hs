@@ -15,14 +15,13 @@ fragment s | all (=='-') s = False
            | otherwise     = False
 
 -- ["documentation","xyz"] => ["do-","cu-","ment-","ation","xyz"]
--- ["do-","cu-","ment-","ation","xyz"] => ["documentation","xyz"]
 hyphenate :: [String] -> [String]
 hyphenate = concatMap (\s -> if '-'`elem`s then [s] else word s)
   where word = hyphens . H.hyphenate H.english_US
         hyphens xs = map (++"-") (init xs) ++ [last xs]
 
+-- ["do-","cu-","ment-","ation","xyz"] => ["documentation","xyz"]
 dehyphenate :: [String] -> [String]
-dehyphenate []       = []
-dehyphenate (x:[])   = [x]
 dehyphenate (x:y:zs) | fragment x = dehyphenate $ (init x++y):zs
                      | otherwise  = x:dehyphenate (y:zs)
+dehyphenate xs = xs
