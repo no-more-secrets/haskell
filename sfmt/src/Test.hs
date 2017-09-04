@@ -19,6 +19,9 @@ import qualified Debug.Trace as T (trace)
 newtype Columns = Columns { getColumns :: Int }
   deriving (Show)
 
+newtype TestWord = TestWord { getWord :: String }
+  deriving (Show)
+
 newtype TestText = TestText { getString :: String }
   deriving (Show)
 
@@ -29,6 +32,9 @@ newtype TestText = TestText { getString :: String }
 trace :: (Show a) => String -> a -> a
 trace s x = T.trace (s ++ ": " ++ show x) x
 
+-- We need this because the one used inside the Hyphen module  is
+-- not exposed.
+isFragment :: String -> Bool
 isFragment x
     | dehyphenate [x,"_"] == [x,"_"]       = False
     | dehyphenate [x,"_"] == [init x++"_"] = True
@@ -70,15 +76,6 @@ isFragment x
 --          produce a result whose length is either equal to
 --          length xs' + length ys', or one less.
 --
---    * hyphenate
---
---        - hyphenate should never decrease the number of words
---
---        - hyphenating a word, then repeatedly hyphenating the
---          components recursively should eventually converge to be
---          idempotent in a number of steps less than the length of
---          the word.
---
 --    * both
 --
 --        - hyphenate and dehyphenate should be inverses when input
@@ -88,7 +85,60 @@ isFragment x
 --                             Hyphen
 -- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 
---prop_hyphNoDec :: k
+-- Hyphenating an empty list of words should yield an empty list.
+prop_hyphEmpty :: Bool
+prop_hyphEmpty = (length (hyphenate []) == 0)
+
+-- Hyphenating a single word should yield  a  number  of  results
+-- less or equal to the number of characters in the word.
+prop_hyphWordMax :: TestWord -> Property
+prop_hyphWordMax (TestWord w) = len > 0 ==> (length hyph <= len)
+  where
+    len  = length w
+    hyph = hyphenate [w]
+
+-- If we hyphenate a  word  that  is  not  a fragment, the result
+-- should consist of all fragments except the last.
+prop_hyphFrags :: TestWord -> Property
+prop_hyphFrags (TestWord w) = (isFragment w == False) ==> result
+  where
+    nonFrags = dropWhile isFragment $ hyphenate $ [w]
+    result   = (length nonFrags == 1)
+
+-- Hyphenating a word, then repeatedly hyphenating the components
+-- recursively should eventually converge to be idempotent  in  a
+-- number of steps less than the length of the word.
+prop_hyphConverge :: TestWord -> Bool
+prop_hyphConverge (TestWord w) = (first == second)
+  where
+    hyphs = iterate hyphenate $ [w]
+    (first, second) = (hyphs !! length w, hyphs !! (length w+1))
+
+-- Hyphenating multiple words separately  and  concatenat the re-
+-- sults  it should yield the same result as hyphenating them to-
+-- gether.
+prop_hyphCompose :: TestText -> Bool
+prop_hyphCompose (TestText s) = (composed == separate)
+  where
+    separate = concatMap (hyphenate . pure) $ words $ s
+    composed = hyphenate $ words $ s
+
+-- If we hyphenate a text, then the concatenated result, with all
+-- dashes removed, should equal the original text with all dashes
+-- removed.
+prop_hyphDashDel :: TestText -> Bool
+prop_hyphDashDel (TestText s) = result
+  where
+    noDash     = filter (/='-') $ concat $             words $ s
+    hyphNoDash = filter (/='-') $ concat $ hyphenate $ words $ s
+    result     = (noDash == hyphNoDash)
+
+-- Hyphenate should never decrease the number of words
+prop_hyphNoDec :: TestText -> Bool
+prop_hyphNoDec (TestText s) = (length hyph >= length ws)
+  where
+    ws   = words s
+    hyph = hyphenate ws
 
 -- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 --                              Wrap
@@ -96,19 +146,19 @@ isFragment x
 
 -- For non-empty input string but zero columns we should  end  up
 -- with precisely one word per line.
-prop_zeroColumns :: TestText -> Property
-prop_zeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
+prop_wrapZeroColumns :: TestText -> Property
+prop_wrapZeroColumns (TestText s) = (notNull s ==> (lengths == [1]))
   where lengths = nubNlnN $ map length $ wrap 0 $ words $ s
 
 -- If we word wrap nothing then we should get nothing.
-prop_emptyString :: Columns -> Bool
-prop_emptyString (Columns n) = (wrap n [] == [])
+prop_wrapEmptyString :: Columns -> Bool
+prop_wrapEmptyString (Columns n) = (wrap n [] == [])
 
 -- If column number is  large  enough  to  hold  the entire input
 -- string (and if input  is  not  empty)  then  the  word-wrapped
 -- output should only have a single line.
-prop_singleLine :: Columns -> Columns -> TestText -> Property
-prop_singleLine (Columns n) (Columns m) (TestText s) = (fits ==> good)
+prop_wrapSingleLine :: Columns -> Columns -> TestText -> Property
+prop_wrapSingleLine (Columns n) (Columns m) (TestText s) = (fits ==> good)
   where
     s'      = take m $ unwords $ words $ s
     fits    = length s' > 0 && length s' <= n
@@ -120,8 +170,8 @@ prop_singleLine (Columns n) (Columns m) (TestText s) = (fits ==> good)
 -- lines (empty input) or produces lines that have length l which
 -- is 0 < l <=  n.  In  this  case  the "length" means the length
 -- after unwords'ing.
-prop_bounds :: Columns -> TestText -> Property
-prop_bounds (Columns n) (TestText s) =
+prop_wrapBounds :: Columns -> TestText -> Property
+prop_wrapBounds (Columns n) (TestText s) =
     (notNull s && not tooLong ==> fits)
   where
     ws        = words s
@@ -133,8 +183,8 @@ prop_bounds (Columns n) (TestText s) =
 -- For a given number of columns n it must be the case  that  any
 -- resulting line which is longer than  n must have only one word
 -- in it.
-prop_longLine :: Columns -> TestText -> Property
-prop_longLine (Columns n) (TestText s) = (notNull s ==> result)
+prop_wrapLongLine :: Columns -> TestText -> Property
+prop_wrapLongLine (Columns n) (TestText s) = (notNull s ==> result)
   where
     lengths  = nubNlnN    $ map length $ keep longLine
              $ wrap n $ words      $ s
@@ -143,8 +193,8 @@ prop_longLine (Columns n) (TestText s) = (notNull s ==> result)
 
 -- If we wrap a text then  the  total  number of words cannot de-
 -- crease.
-prop_nonDecrease :: Columns -> TestText -> Bool
-prop_nonDecrease (Columns n) (TestText s) = (end >= start)
+prop_wrapNonDecrease :: Columns -> TestText -> Bool
+prop_wrapNonDecrease (Columns n) (TestText s) = (end >= start)
   where
     ws    = words s
     start = length ws
@@ -155,8 +205,8 @@ prop_nonDecrease (Columns n) (TestText s) = (end >= start)
 -- tical to calling `words` on  the  original  input  string.  In
 -- other words, if we do a word wrap and then undo the word wrap,
 -- then we should end up exactly where we started.
-prop_inverseEqual :: Columns -> TestText -> Bool
-prop_inverseEqual (Columns n) (TestText s) = (end == start)
+prop_wrapInverseEqual :: Columns -> TestText -> Bool
+prop_wrapInverseEqual (Columns n) (TestText s) = (end == start)
   where
     start = words s
     end   = (dehyphenate . concat . wrap n) start
@@ -165,28 +215,28 @@ prop_inverseEqual (Columns n) (TestText s) = (end == start)
 -- single line without dehyphenating, then apply the word wrap to
 -- this list, we should obtain the same result as the first  word
 -- wrap.
-prop_idempotent :: Columns -> TestText -> Bool
-prop_idempotent (Columns n) (TestText s) = (end == start)
+prop_wrapIdempotent :: Columns -> TestText -> Bool
+prop_wrapIdempotent (Columns n) (TestText s) = (end == start)
   where
     start = wrap n $ words  $ s
     end   = wrap n $ concat $ start
 
 -- The word wrap yields  a  list  of  lines;  none of these lines
 -- should be empty.
-prop_noEmptyLines :: Columns -> TestText -> Bool
-prop_noEmptyLines (Columns n) (TestText s) = (null empty)
+prop_wrapNoEmptyLines :: Columns -> TestText -> Bool
+prop_wrapNoEmptyLines (Columns n) (TestText s) = (null empty)
   where empty = keep null $ wrap n $ words $ s
 
 -- The word wrap yields a list  of  list  of words; none of these
 -- words should be empty.
-prop_noEmptyWords :: Columns -> TestText -> Bool
-prop_noEmptyWords (Columns n) (TestText s) = (null empty)
+prop_wrapNoEmptyWords :: Columns -> TestText -> Bool
+prop_wrapNoEmptyWords (Columns n) (TestText s) = (null empty)
   where empty = keep null $ concat $ wrap n $ words $ s
 
 -- In a wrapped text, any word which has isFragment==True must be
 -- the last word on a line.
-prop_fragLast :: Columns -> TestText -> Bool
-prop_fragLast (Columns n) (TestText s) = good
+prop_wrapFragLast :: Columns -> TestText -> Bool
+prop_wrapFragLast (Columns n) (TestText s) = good
   where
     fragLast = (<=1) . length . dropWhile (not . isFragment)
     good     = all fragLast $ wrap n $ words $ s
@@ -194,8 +244,8 @@ prop_fragLast (Columns n) (TestText s) = good
 -- Given an initial  text  containing  at  least  one hyphen, the
 -- total  number of hyphens in the text should be preserved after
 -- wrapping and dehyphenating.
-prop_constHyphs :: Columns -> TestText -> Property
-prop_constHyphs (Columns n) (TestText s) = (hasHyphs ==> result)
+prop_wrapConstHyphs :: Columns -> TestText -> Property
+prop_wrapConstHyphs (Columns n) (TestText s) = (hasHyphs ==> result)
   where
     s' = concat $ dehyphenate $ concat $ wrap n $ words $ s
     numHyphs = length . filter ('-'==)
@@ -218,8 +268,8 @@ prop_constHyphs (Columns n) (TestText s) = (hasHyphs ==> result)
 -- should  still  fine  blatant problems like if the word wrapper
 -- makes lines that that would be too short even with hyphenation
 -- turned off.
-prop_greedyNoHyph :: Columns -> TestText -> Bool
-prop_greedyNoHyph (Columns n) (TestText s) = result
+prop_wrapGreedyNoHyph :: Columns -> TestText -> Bool
+prop_wrapGreedyNoHyph (Columns n) (TestText s) = result
   where
     wrapped = wrap n $ words $ s
     result  = and $ do
@@ -230,7 +280,7 @@ prop_greedyNoHyph (Columns n) (TestText s) = result
       -- this word on the previous line
       return $ endsWithHyphen || (remaining < (length x + 1))
 
--- This  is essentially prop_greedyNoHyph but is a stronger check
+-- This  is essentially prop_wrapGreedyNoHyph but is a stronger check
 -- which  also tries to hyphenate the first word on the next line
 -- to try to fit it on the previous line (and if  that  fit  suc-
 -- ceeds then it's a failure). However, it will short-circuit and
@@ -241,8 +291,8 @@ prop_greedyNoHyph (Columns n) (TestText s) = result
 -- the property that  hyphenating  the  suffix  of  a hyphenation
 -- yields the same hyphenation  structure  as  when we hyphenated
 -- the original word.
-prop_greedy :: Columns -> TestText -> Bool
-prop_greedy (Columns n) (TestText s) = result
+prop_wrapGreedy :: Columns -> TestText -> Bool
+prop_wrapGreedy (Columns n) (TestText s) = result
   where
     wrapped = wrap n $ words $ s
     result  = and $ do
@@ -262,7 +312,7 @@ prop_greedy (Columns n) (TestText s) = result
 return []
 runTests = $quickCheckAll
 --runTests = $verboseCheckAll
---runTests = verboseCheck prop_constHyphs
+--runTests = verboseCheck prop_wrapConstHyphs
 
 -- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 --                           Generators
@@ -286,6 +336,9 @@ genTextWord = do
   where
     dropEndHyphens :: String -> String
     dropEndHyphens = reverse . dropWhile ('-'==) . reverse
+
+instance Arbitrary TestWord where
+    arbitrary = TestWord <$> genTextWord
 
 genTextSentence :: Gen [String]
 genTextSentence = do
