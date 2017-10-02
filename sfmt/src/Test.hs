@@ -1,6 +1,6 @@
--- ──────────────────────────────────────────────────────────────
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- Tests
--- ──────────────────────────────────────────────────────────────
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test (runTests) where
@@ -12,9 +12,9 @@ import Utils
 
 import qualified Debug.Trace as T (trace)
 
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --                              Types
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 newtype Columns = Columns { getColumns :: Int }
   deriving (Show)
@@ -25,9 +25,9 @@ newtype TestWord = TestWord { getWord :: String }
 newtype TestText = TestText { getString :: String }
   deriving (Show)
 
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --                           Utilities
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 trace :: (Show a) => String -> a -> a
 trace s x = T.trace (s ++ ": " ++ show x) x
@@ -81,9 +81,9 @@ isFragment x
 --        - hyphenate and dehyphenate should be inverses when input
 --          contains no fragments (apart from possibly last word).
 
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --                             Hyphen
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- Hyphenating an empty list of words should yield an empty list.
 prop_hyphEmpty :: Bool
@@ -140,9 +140,9 @@ prop_hyphNoDec (TestText s) = (length hyph >= length ws)
     ws   = words s
     hyph = hyphenate ws
 
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --                              Wrap
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -- For non-empty input string but zero columns we should  end  up
 -- with precisely one word per line.
@@ -307,17 +307,16 @@ prop_wrapGreedy (Columns n) (TestText s) = result
       -- component on the previous line
       return $ endsWithHyphen || (remaining < (firstHyphLen + 1))
 
--- ──────────────────────────────────────────────────────────────
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 return []
 runTests = $quickCheckAll
 --runTests = $verboseCheckAll
 --runTests = verboseCheck prop_wrapConstHyphs
 
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 --                           Generators
--- ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 genTextChar :: Gen Char
 genTextChar = elements $ concat $
     replicate 6 ['a'..'z'] ++ ["0123456789-"]
