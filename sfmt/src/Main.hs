@@ -9,7 +9,7 @@ defaultCols :: Int
 defaultCols = 65
 
 allComments :: [String]
-allComments = ["//","* ","--","#"]
+allComments = ["//","* ","--","#","\""]
 
 extComments :: String -> [String]
 extComments = \case
@@ -22,11 +22,13 @@ extComments = \case
     ".sh"  -> ["#"]
     ".mk"  -> ["#"]
     ".mkh" -> ["#"]
+    ".vim" -> ["\""]
 
 commentsFromFileName :: String -> [String]
 commentsFromFileName = \case
     "Makefile" -> extComments ".mk"
     "makefile" -> extComments ".mk"
+    ".vimrc"   -> extComments ".vim"
     s          -> extComments (takeExtension s)
 
 main_ :: [String] -> IO ()
