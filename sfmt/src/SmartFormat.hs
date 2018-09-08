@@ -35,7 +35,8 @@ type FMT = Config -> String -> String
 -- tended to be  called  after  any  preprocessing functions have
 -- e.g. removed spaces or comment prefixes.
 fmtPara :: FMT
-fmtPara c = unlines . map (justify n) . wrap n . words
+--fmtPara c = unlines . map (justify n) . wrap n . words
+fmtPara c = unlines . map unwords . wrap n . words
   where n = target c
 
 -- ──────────────────────────────────────────────────────────────
