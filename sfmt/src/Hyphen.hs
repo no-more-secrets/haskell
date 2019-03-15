@@ -14,9 +14,16 @@ fragment s | all (=='-') s = False
            | last s == '-' = True && not (fragment (init s))
            | otherwise     = False
 
+-- Should a word be exempt from hyphenation.
+isExempt :: String -> Bool
+isExempt s
+  | '-'`elem`s = True
+  | '_'`elem`s = True
+  | otherwise = False
+
 -- ["documentation","xyz"] => ["do-","cu-","ment-","ation","xyz"]
 hyphenate :: [String] -> [String]
-hyphenate = concatMap (\s -> if '-'`elem`s then [s] else word s)
+hyphenate = concatMap (\s -> if isExempt s then [s] else word s)
   where word = hyphens . H.hyphenate H.english_US
         hyphens xs = map (++"-") (init xs) ++ [last xs]
 
