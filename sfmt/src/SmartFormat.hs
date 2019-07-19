@@ -69,12 +69,12 @@ fmtLeadingSpace f c xs = noSpaces (f c') xs
 -- function is decreased by the length of the comment prefix.
 fmtComments :: FMT -> FMT
 fmtComments f c s = let
-    comPrefix    = (commonPrefixAll . lines) s
-    hasCommentPrefix = isJust . flip find (comments c)
-                     . startsWith $ comPrefix
-    prefix'      = if hasCommentPrefix then comPrefix else ""
-    size         = length prefix'
-    c'           = Config (target c-size) (comments c)
+    commonPrefix  = (commonPrefixAll . lines) s
+    commentPrefix = flip find (comments c)
+                  . startsWith $ commonPrefix
+    prefix'       = fromMaybe "" commentPrefix
+    size          = length prefix'
+    c'            = Config (target c-size) (comments c)
  in byLine (prefix'++) . f c' . byLine (drop size) $ s
 
 -- chopOn odd [3,4,5,7,6,6,9,8,8] --> [[3,4],[5],[7,6,6],[9,8,8]]
