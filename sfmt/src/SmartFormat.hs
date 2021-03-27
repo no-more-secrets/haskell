@@ -92,8 +92,9 @@ chopOn f xs@(x:rest) = firstChunk:chopOn f remainder
 --     - this is another bullet point
 --       this is another bullet point
 --
-fmtBullets :: FMT -> FMT
-fmtBullets f c s
+-- where '-' is whatever character is passed in as the first arg.
+fmtBullets :: Char -> FMT -> FMT
+fmtBullets bulletChar f c s
   | shouldFormat = concat . map unlines . map addBullet
                           . map lines . map (f c') . map unlines
                           . map removeBullet $ bulletChunks
@@ -101,19 +102,19 @@ fmtBullets f c s
   where
     bulletChunks = (splitOnBullets . lines) s
     shouldFormat = (length bulletChunks > 1) ||
-                   (take 1 s == ['-'])
+                   (take 1 s == [bulletChar])
     c' = c{ target = target c-2 }
 
     splitOnBullets :: [String] -> [[String]]
     splitOnBullets = chopOn hasBullet
-      where hasBullet l = l`startsWith`"- "
+      where hasBullet l = l`startsWith`[bulletChar, ' ']
 
     removeBullet :: [String] -> [String]
     removeBullet []     = []
     removeBullet (x:xs) = (removeBullet' x):map removeAtMostTwoSpaces xs
       where
         removeBullet' :: String -> String
-        removeBullet' ('-':' ':rest) = rest
+        removeBullet' (bulletChar:' ':rest) = rest
         removeBullet' xs = xs
 
         removeAtMostTwoSpaces :: String -> String
@@ -122,7 +123,56 @@ fmtBullets f c s
         removeAtMostTwoSpaces ys = ys
 
     addBullet :: [String] -> [String]
-    addBullet (x:xs) = ('-':' ':x):map (\s -> ' ':' ':s) xs
+    addBullet (x:xs) = (bulletChar:' ':x):map (\s -> ' ':' ':s) xs
+
+-- Will format number points of this form:
+--
+--     1. this is a number point
+--        this is a number point
+--     2. this is another number point
+--        this is another number point
+--
+fmtNumbers :: FMT -> FMT
+fmtNumbers f c s
+  | shouldFormat = concat . map unlines . zipWith addNumber [1..]
+                          . map lines . map (f c') . map unlines
+                          . map removeNumber $ numberChunks
+  | otherwise = (f c) s
+  where
+    numberChunks = (splitOnNumbers . lines) s
+    shouldFormat = (length numberChunks > 1) ||
+                   (take 2 s == ['1', '.'])
+    prefixSizeNeeded :: Int
+    prefixSizeNeeded = (+2) . length . show . length $ numberChunks
+    c' = c{ target = target c-prefixSizeNeeded }
+
+    splitOnNumbers :: [String] -> [[String]]
+    splitOnNumbers = chopOn hasNumber
+      where
+        isDigit :: Char -> Bool
+        isDigit c = c`elem`"0123456789"
+
+        hasNumber :: String -> Bool
+        hasNumber = (==".") . take 1 . dropWhile isDigit
+
+    removeNumber :: [String] -> [String]
+    removeNumber []     = []
+    removeNumber (x:xs) = (removeNumber' x):map (dropAtMostNSpaces prefixSizeNeeded) xs
+      where
+        removeNumber' :: String -> String
+        removeNumber' = dropAtMostNSpaces 1 . drop 1 . dropWhile (/= '.')
+
+        dropAtMostNSpaces :: Int -> String -> String
+        dropAtMostNSpaces n s = (dropWhile (==' ') . take n $ s) ++ (drop n s)
+
+    addNumber :: Int -> [String] -> [String]
+    addNumber n (x:xs) = firstLine:remainingLines
+      where
+        firstLine = show n ++ "." ++ replicate paddingNeeded ' ' ++ x
+        remainingLines = map (\s -> (replicate prefixSizeNeeded ' ') ++ s) xs
+
+        paddingNeeded :: Int
+        paddingNeeded = prefixSizeNeeded - length (show n) - 1 -- (-1 for dot)
 
 -- Apply  the  given  formatting function to each paragraph, then
 -- rejoin the paragraphs.
@@ -158,7 +208,9 @@ standard = [fmtMultiPara
            ,fmtComments
            ,fmtMultiPara
            ,fmtLeadingSpace
-           ,fmtBullets
+           ,fmtBullets '*'
+           ,fmtBullets '-'
+           ,fmtNumbers
            ,fmtMultiPara]
 
 commentsOnly = fmtCommentsOnly:standard
