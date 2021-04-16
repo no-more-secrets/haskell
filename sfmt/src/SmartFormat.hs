@@ -11,7 +11,8 @@ import Data.List       (find, intercalate)
 import Data.List.Split (splitOn)
 import Data.Maybe      (fromMaybe, isJust)
 import Justify         (justify)
-import Utils           (commonPrefixAll, byLine, strip
+import Safe            (headMay)
+import Utils           (commonPrefixAll, byLine, strip, fAnd
                        ,startsWith, groupByKey, endsWith)
 import Wrap            (wrap)
 
@@ -125,7 +126,7 @@ fmtBullets bulletChar f c s
     addBullet :: [String] -> [String]
     addBullet (x:xs) = (bulletChar:' ':x):map (\s -> ' ':' ':s) xs
 
--- Will format number points of this form:
+-- Will format number points into this form:
 --
 --     1. this is a number point
 --        this is a number point
@@ -140,17 +141,20 @@ fmtNumbers f c s
   | otherwise = (f c) s
   where
     numberChunks = (splitOnNumbers . lines) s
-    shouldFormat = (length numberChunks > 1) ||
+    shouldFormat = (length numberChunks > 1) &&
                    (take 2 s == ['1', '.'])
     prefixSizeNeeded :: Int
     prefixSizeNeeded = (+2) . length . show . length $ numberChunks
     c' = c{ target = target c-prefixSizeNeeded }
 
     splitOnNumbers :: [String] -> [[String]]
-    splitOnNumbers = chopOn hasNumber
+    splitOnNumbers = chopOn (hasNumber`fAnd`hasLeadingDigit)
       where
         isDigit :: Char -> Bool
-        isDigit c = c`elem`"0123456789"
+        isDigit = (`elem`"0123456789")
+
+        hasLeadingDigit :: String -> Bool
+        hasLeadingDigit = fromMaybe False . fmap isDigit . headMay
 
         hasNumber :: String -> Bool
         hasNumber = (==".") . take 1 . dropWhile isDigit
