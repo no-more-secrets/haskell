@@ -207,7 +207,7 @@ fmtCommentsOnly f c = concat . map process
 -- We need two fmtMultiPara's because we may of comments split
 -- into paragraphs both outside of the common prefix or inside
 -- it.
-standard = [fmtMultiPara
+standard = [fmtMultiPara  -- inner
            ,fmtLeadingSpace
            ,fmtComments
            ,fmtMultiPara
@@ -215,7 +215,7 @@ standard = [fmtMultiPara
            ,fmtBullets '*'
            ,fmtBullets '-'
            ,fmtNumbers
-           ,fmtMultiPara]
+           ,fmtMultiPara] -- outter
 
 commentsOnly = fmtCommentsOnly:standard
 
