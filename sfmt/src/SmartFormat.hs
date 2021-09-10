@@ -101,14 +101,16 @@ fmtBullets bulletChar f c s
                           . map removeBullet $ bulletChunks
   | otherwise = (f c) s
   where
-    bulletChunks = (splitOnBullets . lines) s
     shouldFormat = (length bulletChunks > 1) ||
                    (take 1 s == [bulletChar])
-    c' = c{ target = target c-2 }
 
-    splitOnBullets :: [String] -> [[String]]
-    splitOnBullets = chopOn hasBullet
-      where hasBullet l = l`startsWith`[bulletChar, ' ']
+    bulletChunks = (splitOnBullets . lines) s
+      where
+        splitOnBullets :: [String] -> [[String]]
+        splitOnBullets = chopOn hasBullet
+          where hasBullet l = l`startsWith`[bulletChar, ' ']
+
+    c' = c{ target = target c-2 }
 
     removeBullet :: [String] -> [String]
     removeBullet []     = []
@@ -140,24 +142,26 @@ fmtNumbers f c s
                           . map removeNumber $ numberChunks
   | otherwise = (f c) s
   where
-    numberChunks = (splitOnNumbers . lines) s
     shouldFormat = (length numberChunks > 1) &&
                    (take 2 s == ['1', '.'])
+
+    numberChunks = (splitOnNumbers . lines) s
+      where
+        splitOnNumbers :: [String] -> [[String]]
+        splitOnNumbers = chopOn (hasNumber`fAnd`hasLeadingDigit)
+          where
+            isDigit :: Char -> Bool
+            isDigit = (`elem`"0123456789")
+
+            hasLeadingDigit :: String -> Bool
+            hasLeadingDigit = fromMaybe False . fmap isDigit . headMay
+
+            hasNumber :: String -> Bool
+            hasNumber = (==".") . take 1 . dropWhile isDigit
+
     prefixSizeNeeded :: Int
     prefixSizeNeeded = (+2) . length . show . length $ numberChunks
     c' = c{ target = target c-prefixSizeNeeded }
-
-    splitOnNumbers :: [String] -> [[String]]
-    splitOnNumbers = chopOn (hasNumber`fAnd`hasLeadingDigit)
-      where
-        isDigit :: Char -> Bool
-        isDigit = (`elem`"0123456789")
-
-        hasLeadingDigit :: String -> Bool
-        hasLeadingDigit = fromMaybe False . fmap isDigit . headMay
-
-        hasNumber :: String -> Bool
-        hasNumber = (==".") . take 1 . dropWhile isDigit
 
     removeNumber :: [String] -> [String]
     removeNumber []     = []
