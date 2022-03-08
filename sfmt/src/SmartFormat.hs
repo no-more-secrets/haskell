@@ -137,13 +137,16 @@ fmtBullets bulletChar f c s
 --
 fmtNumbers :: FMT -> FMT
 fmtNumbers f c s
-  | shouldFormat = concat . map unlines . zipWith addNumber [1..]
+  | shouldFormat = concat . map unlines . zipWith addNumber [startsWith..]
                           . map lines . map (f c') . map unlines
                           . map removeNumber $ numberChunks
   | otherwise = (f c) s
   where
-    shouldFormat = (length numberChunks > 1) &&
-                   (take 2 s == ['1', '.'])
+    startsWithOne = (length numberChunks > 1) && (take 2 s == ['1', '.'])
+    startsWithZero = (length numberChunks > 1) && (take 2 s == ['0', '.'])
+    startsWith = read $ take 1 s
+
+    shouldFormat = (length numberChunks > 1) && (startsWithOne || startsWithZero)
 
     numberChunks = (splitOnNumbers . lines) s
       where
